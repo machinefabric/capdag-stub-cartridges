@@ -18,6 +18,24 @@
         { "source": "stubs/python/gitignore", "dest": ".gitignore", "executable": false }
       ]
     },
+    "rust": {
+      "flag": "--rust",
+      "display": "Rust",
+      "entry": "target/release/__CARTRIDGE_NAME__",
+      "build": ["cargo build --release"],
+      "runtime": {
+        "registry": "crates.io",
+        "package": "capdag",
+        "install": "cargo build (the dependency is declared in Cargo.toml)"
+      },
+      "files": [
+        { "source": "stubs/rust/src/main.rs", "dest": "src/main.rs", "executable": false },
+        { "source": "stubs/rust/Cargo.toml", "dest": "Cargo.toml", "executable": false },
+        { "source": "stubs/rust/cargo-config.toml", "dest": ".cargo/config.toml", "executable": false },
+        { "source": "stubs/rust/README.md", "dest": "README.md", "executable": false },
+        { "source": "stubs/rust/gitignore", "dest": ".gitignore", "executable": false }
+      ]
+    },
     "go": {
       "flag": "--go",
       "display": "Go",
@@ -33,6 +51,23 @@
         { "source": "stubs/go/go.mod", "dest": "go.mod", "executable": false },
         { "source": "stubs/go/README.md", "dest": "README.md", "executable": false },
         { "source": "stubs/go/gitignore", "dest": ".gitignore", "executable": false }
+      ]
+    },
+    "swift": {
+      "flag": "--swift",
+      "display": "Swift",
+      "entry": ".build/release/__CARTRIDGE_NAME__",
+      "build": ["swift build -c release"],
+      "runtime": {
+        "registry": "git tag",
+        "package": "capdag-objc",
+        "install": "swift build (the dependency is declared in Package.swift)"
+      },
+      "files": [
+        { "source": "stubs/swift/Sources/main.swift", "dest": "Sources/main.swift", "executable": false },
+        { "source": "stubs/swift/Package.swift", "dest": "Package.swift", "executable": false },
+        { "source": "stubs/swift/README.md", "dest": "README.md", "executable": false },
+        { "source": "stubs/swift/gitignore", "dest": ".gitignore", "executable": false }
       ]
     }
   }

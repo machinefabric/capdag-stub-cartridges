@@ -1,0 +1,11 @@
+# capdag's build script bakes two versions into the crate and treats both as
+# MANDATORY — a plain `cargo build` without them fails with a message telling
+# you to build through `dx`, which is the MachineFabric workspace's tool and not
+# something a cartridge project has. Setting them here is what makes `cargo
+# build` work in a scaffolded project.
+#
+# They pin which fabric manifest and which cartridge registry regime this
+# cartridge is compiled against, and they must match the capdag version above.
+[env]
+MFR_FABRIC_MANIFEST_VERSION = "4"
+MFR_CARTRIDGE_REGISTRY_VERSION = "1"
