@@ -1,0 +1,39 @@
+{
+  "contract_version": 1,
+  "placeholder": "__CARTRIDGE_NAME__",
+  "languages": {
+    "python": {
+      "flag": "--python",
+      "display": "Python",
+      "entry": "cartridge.py",
+      "build": [],
+      "runtime": {
+        "registry": "PyPI",
+        "package": "capdag",
+        "install": "pip install capdag"
+      },
+      "files": [
+        { "source": "stubs/python/cartridge.py", "dest": "cartridge.py", "executable": true },
+        { "source": "stubs/python/README.md", "dest": "README.md", "executable": false },
+        { "source": "stubs/python/gitignore", "dest": ".gitignore", "executable": false }
+      ]
+    },
+    "go": {
+      "flag": "--go",
+      "display": "Go",
+      "entry": "__CARTRIDGE_NAME__",
+      "build": ["go mod tidy", "go build -o __CARTRIDGE_NAME__ ."],
+      "runtime": {
+        "registry": "git tag",
+        "package": "github.com/machinefabric/capdag-go",
+        "install": "go mod tidy"
+      },
+      "files": [
+        { "source": "stubs/go/cartridge.go", "dest": "cartridge.go", "executable": false },
+        { "source": "stubs/go/go.mod", "dest": "go.mod", "executable": false },
+        { "source": "stubs/go/README.md", "dest": "README.md", "executable": false },
+        { "source": "stubs/go/gitignore", "dest": ".gitignore", "executable": false }
+      ]
+    }
+  }
+}
