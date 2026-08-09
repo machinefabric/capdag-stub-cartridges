@@ -1,47 +1,48 @@
 // __CARTRIDGE_NAME__ — a MachineFabric cartridge (Swift), scaffolded by `capdag new`.
 //
 // Reads UTF-8 text on stdin and emits a single tag word: `positive`,
-// `neutral`, or `negative`. This is the smallest useful shape of a cartridge:
-// one custom cap, one Op, one manifest, one main. Replace classify() and the
-// input/output media URNs to build your own capability.
+// `neutral`, or `negative`.
+//
+// The judgment is made by a REAL model: this cartridge does no inference
+// itself, it PEER-CALLS the `classify-en` cap and whichever model cartridge the
+// host has installed answers it. That is the shape most cartridges want — own
+// the domain logic, delegate the model — and it is what makes this the smallest
+// useful cartridge rather than a toy: one custom cap, one Op that calls a peer,
+// one manifest, one main.
 //
 // Develop it with:
 //     swift build -c release                    # the entry the host launches
 //     capdag dev-install .                      # install under the local `dev` slug
 //     echo "I love this" | capdag __CARTRIDGE_NAME__
-//     # edit classify(), then re-run both to update
+//     # edit the labels or the peer cap, then re-run both to update
 
 import Foundation
 import Bifaci
 import CapDAG
 import Ops
 
-// --- Domain logic — pure Swift, no MachineFabric awareness. -----------------
+// --- The peer cap this cartridge delegates to. ------------------------------
 
-let positiveWords: Set<String> = [
-    "good", "great", "love", "happy", "excellent",
-    "wonderful", "amazing", "fantastic", "delightful",
-]
-let negativeWords: Set<String> = [
-    "bad", "terrible", "hate", "sad", "awful",
-    "disappointing", "horrible", "miserable", "broken",
-]
-
-/// Return one of `positive`, `neutral`, `negative` for the input.
+/// `classify-en` — closed-set labeling by a real model, provided by whichever
+/// model cartridge the host has installed.
 ///
-/// Case-insensitive whole-word match against two small word lists. Replace
-/// this with a real model when you graduate from `getting started`.
-func classify(_ text: String) -> String {
-    var pos = 0
-    var neg = 0
-    for raw in text.split(whereSeparator: { $0.isWhitespace }) {
-        let token = raw.trimmingCharacters(in: CharacterSet(charactersIn: ".,!?;:")).lowercased()
-        if positiveWords.contains(token) { pos += 1 }
-        if negativeWords.contains(token) { neg += 1 }
-    }
-    if pos > neg { return "positive" }
-    if neg > pos { return "negative" }
-    return "neutral"
+/// The labels are token-level constrained to the set we pass, so the answer is
+/// always one of them: a hallucinated label is impossible by construction, and
+/// this cartridge does not have to defend against one.
+let classifyCap =
+    "cap:classify;constrained;in=\"media:enc=utf-8\";language=en;"
+    + "out=\"media:fmt=json;record;semantic-judgment\""
+
+/// The item being classified, and the allowed labels — both addressed by MEDIA
+/// URN, which is how a peer call names its arguments.
+let classifyItemMedia = "media:enc=utf-8"
+let classifyLabelsMedia = "media:enc=utf-8;label-set"
+
+let labels = "positive,neutral,negative"
+
+/// The shape `classify-en` answers with: {"label", "confidence", "reason"}.
+struct SemanticJudgment: Decodable {
+    let label: String
 }
 
 // --- Op — implements the cap. -----------------------------------------------
@@ -55,10 +56,39 @@ struct TagOp: Op, Sendable {
         let payload = try req.takeInput().collectAllBytes()
         let text = String(decoding: payload, as: UTF8.self)
 
-        // emitCbor writes one CHUNK frame; the runtime emits END for us.
         let out = req.output()
         try out.start(isSequence: false)
-        try await out.emitCbor(.utf8String(classify(text)))
+
+        // Ask the model cartridge. Arguments are addressed by media URN, not by
+        // position.
+        let response = try req.peer().callWithBytes(
+            capUrn: classifyCap,
+            args: [
+                (mediaUrn: classifyItemMedia, data: Data(text.utf8)),
+                (mediaUrn: classifyLabelsMedia, data: Data(labels.utf8)),
+            ]
+        )
+
+        // FORWARDING collector: inference is slow and the model reports progress
+        // as it goes. A plain collectBytes REJECTS those LOG frames rather than
+        // discarding them silently, so a peer that talks must be collected
+        // through a forwarder. The peer's 0..1 progress is rescaled into the
+        // 0.0..0.9 slice of ours, leaving the last tenth for our own work below.
+        let judgment = try response.collectBytesForwarding(
+            output: out, progressBase: 0.0, progressWeight: 0.9)
+
+        // The judgment record is {"label", "confidence", "reason"}; the label is
+        // one of the labels we asked for.
+        let record: SemanticJudgment
+        do {
+            record = try JSONDecoder().decode(SemanticJudgment.self, from: judgment)
+        } catch {
+            throw CartridgeRuntimeError.handlerError(
+                "classify returned something that is not a semantic-judgment record: \(error)")
+        }
+
+        out.finish(progress: 1.0, message: "classified as \(record.label)")
+        try await out.emitCbor(.utf8String(record.label))
     }
 
     func metadata() -> OpMetadata {

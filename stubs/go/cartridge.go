@@ -1,22 +1,27 @@
 // __CARTRIDGE_NAME__ — a MachineFabric cartridge (Go), scaffolded by `capdag new`.
 //
 // Reads UTF-8 text on stdin and emits a single tag word: `positive`,
-// `neutral`, or `negative`. This is the smallest useful shape of a cartridge:
-// one custom cap, one Op, one manifest, one main(). Replace classify() and
-// the input/output media URNs to build your own capability.
+// `neutral`, or `negative`.
+//
+// The judgment is made by a REAL model: this cartridge does no inference
+// itself, it PEER-CALLS the `classify-en` cap and whichever model cartridge the
+// host has installed answers it. That is the shape most cartridges want — own
+// the domain logic, delegate the model — and it is what makes this the smallest
+// useful cartridge rather than a toy: one custom cap, one Op that calls a peer,
+// one manifest, one main().
 //
 // Develop it with:
 //
 //	go build -o __CARTRIDGE_NAME__ .   # the entry the host launches
 //	capdag dev-install .               # install/update under the local `dev` slug
 //	echo "I love this" | capdag __CARTRIDGE_NAME__
-//	# edit classify(), then re-run `go build` + `capdag dev-install .` to update
+//	# edit the labels or the peer cap, then rebuild + re-install to update
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	capdag "github.com/machinefabric/capdag-go"
 	"github.com/machinefabric/capdag-go/bifaci"
@@ -24,41 +29,23 @@ import (
 	"github.com/machinefabric/capdag-go/urn"
 )
 
-// --- Domain logic — pure Go, no MachineFabric awareness. --------------------
+// --- The peer cap this cartridge delegates to. ------------------------------
 
-var positiveWords = map[string]bool{
-	"good": true, "great": true, "love": true, "happy": true, "excellent": true,
-	"wonderful": true, "amazing": true, "fantastic": true, "delightful": true,
-}
-
-var negativeWords = map[string]bool{
-	"bad": true, "terrible": true, "hate": true, "sad": true, "awful": true,
-	"disappointing": true, "horrible": true, "miserable": true, "broken": true,
-}
-
-// classify returns one of `positive`, `neutral`, `negative` for the input.
+// classifyCap is `classify-en` — closed-set labeling by a real model, provided
+// by whichever model cartridge the host has installed.
 //
-// Case-insensitive whole-word match against two small word lists. Replace
-// this with a real model when you graduate from `getting started`.
-func classify(text string) string {
-	pos, neg := 0, 0
-	for _, token := range strings.Fields(text) {
-		token = strings.ToLower(strings.Trim(token, ".,!?;:"))
-		if positiveWords[token] {
-			pos++
-		}
-		if negativeWords[token] {
-			neg++
-		}
-	}
-	if pos > neg {
-		return "positive"
-	}
-	if neg > pos {
-		return "negative"
-	}
-	return "neutral"
-}
+// The labels are token-level constrained to the set we pass, so the answer is
+// always one of them: a hallucinated label is impossible by construction, and
+// this cartridge does not have to defend against one.
+const classifyCap = `cap:classify;constrained;in="media:enc=utf-8";language=en;out="media:fmt=json;record;semantic-judgment"`
+
+// The item being classified, and the allowed labels — both addressed by MEDIA
+// URN, which is how a peer call names its arguments.
+const (
+	classifyItemMedia   = "media:enc=utf-8"
+	classifyLabelsMedia = "media:enc=utf-8;label-set"
+	labels              = "positive,neutral,negative"
+)
 
 // --- Op — implements the cap. -----------------------------------------------
 
@@ -70,8 +57,46 @@ func (op *TagOp) Perform(req *bifaci.Request) error {
 	if err != nil {
 		return err
 	}
-	// EmitCbor writes one CHUNK frame; the runtime emits END for us.
-	return req.Output().EmitCbor(classify(text))
+
+	output := req.Output()
+	if err := output.StartUnbounded(false); err != nil {
+		return err
+	}
+
+	// Ask the model cartridge. Arguments are addressed by media URN, not by
+	// position.
+	peerFrames, err := req.Peer().Invoke(classifyCap, []cap.CapArgumentValue{
+		cap.NewCapArgumentValue(classifyItemMedia, []byte(text)),
+		cap.NewCapArgumentValue(classifyLabelsMedia, []byte(labels)),
+	})
+	if err != nil {
+		return fmt.Errorf("classify peer call failed: %w", err)
+	}
+
+	// FORWARDING collector: inference is slow and the model reports progress as
+	// it goes. A plain CollectBytes REJECTS those LOG frames rather than
+	// discarding them silently, so a peer that talks must be collected through a
+	// forwarder. The peer's 0..1 progress is rescaled into the 0.0..0.9 slice of
+	// ours, leaving the last tenth for our own work below.
+	judgment, err := bifaci.DemuxPeerResponse(peerFrames).CollectBytesForwarding(output, 0.0, 0.9)
+	if err != nil {
+		return err
+	}
+
+	// The judgment record is {"label", "confidence", "reason"}; the label is one
+	// of the labels we asked for.
+	var record struct {
+		Label string `json:"label"`
+	}
+	if err := json.Unmarshal(judgment, &record); err != nil {
+		return fmt.Errorf("classify returned something that is not a semantic-judgment record: %w", err)
+	}
+	if record.Label == "" {
+		return fmt.Errorf("the semantic-judgment record has no string `label` field")
+	}
+
+	output.Finish(1.0, fmt.Sprintf("classified as %s", record.Label))
+	return output.EmitCbor(record.Label)
 }
 
 // collectText reassembles the request's CHUNK payloads, stopping at END.

@@ -1,15 +1,20 @@
 //! __CARTRIDGE_NAME__ — a MachineFabric cartridge (Rust), scaffolded by `capdag new`.
 //!
 //! Reads UTF-8 text on stdin and emits a single tag word: `positive`,
-//! `neutral`, or `negative`. This is the smallest useful shape of a cartridge:
-//! one custom cap, one Op, one manifest, one main(). Replace `classify()` and
-//! the input/output media URNs to build your own capability.
+//! `neutral`, or `negative`.
+//!
+//! The judgment is made by a REAL model: this cartridge does no inference
+//! itself, it PEER-CALLS the `classify-en` cap and whichever model cartridge
+//! the host has installed answers it. That is the shape most cartridges want —
+//! own the domain logic, delegate the model — and it is what makes this the
+//! smallest useful cartridge rather than a toy: one custom cap, one Op that
+//! calls a peer, one manifest, one main().
 //!
 //! Develop it with:
 //!     cargo build --release                     # the entry the host launches
 //!     capdag dev-install .                      # install under the local `dev` slug
 //!     echo "I love this" | capdag __CARTRIDGE_NAME__
-//!     # edit classify(), then re-run both to update
+//!     # edit the labels or the peer cap, then re-run both to update
 
 use anyhow::Result;
 use capdag::standard::caps::identity_urn;
@@ -18,42 +23,26 @@ use capdag::{
     CartridgeChannel, CartridgeRuntime, DryContext, Op, OpError, OpMetadata, OpResult, Request,
     WetContext, WET_KEY_REQUEST,
 };
+use serde_json::Value as JsonValue;
 use std::sync::Arc;
 
-// --- Domain logic — pure Rust, no MachineFabric awareness. ------------------
+// --- The peer cap this cartridge delegates to. ------------------------------
 
-const POSITIVE_WORDS: [&str; 9] = [
-    "good", "great", "love", "happy", "excellent", "wonderful", "amazing", "fantastic",
-    "delightful",
-];
-const NEGATIVE_WORDS: [&str; 9] = [
-    "bad", "terrible", "hate", "sad", "awful", "disappointing", "horrible", "miserable", "broken",
-];
-
-/// Return one of `positive`, `neutral`, `negative` for the input.
+/// `classify-en` — closed-set labeling by a real model, provided by whichever
+/// model cartridge the host has installed.
 ///
-/// Case-insensitive whole-word match against two small word lists. Replace
-/// this with a real model when you graduate from `getting started`.
-fn classify(text: &str) -> &'static str {
-    let mut pos = 0usize;
-    let mut neg = 0usize;
-    for token in text.split_whitespace() {
-        let token = token.trim_matches(|c| ".,!?;:".contains(c)).to_lowercase();
-        if POSITIVE_WORDS.contains(&token.as_str()) {
-            pos += 1;
-        }
-        if NEGATIVE_WORDS.contains(&token.as_str()) {
-            neg += 1;
-        }
-    }
-    if pos > neg {
-        "positive"
-    } else if neg > pos {
-        "negative"
-    } else {
-        "neutral"
-    }
-}
+/// The labels are token-level constrained to the set we pass, so the answer is
+/// always one of them: a hallucinated label is impossible by construction, and
+/// this cartridge does not have to defend against one.
+const CLASSIFY_CAP: &str =
+    r#"cap:classify;constrained;in="media:enc=utf-8";language=en;out="media:fmt=json;record;semantic-judgment""#;
+
+/// The item being classified, and the allowed labels — both addressed by MEDIA
+/// URN, which is how a peer call names its arguments.
+const CLASSIFY_ITEM_MEDIA: &str = "media:enc=utf-8";
+const CLASSIFY_LABELS_MEDIA: &str = "media:enc=utf-8;label-set";
+
+const LABELS: &str = "positive,neutral,negative";
 
 // --- Op — implements the cap. -----------------------------------------------
 
@@ -75,15 +64,57 @@ impl Op<()> for TagOp {
             .await
             .map_err(|e| OpError::ExecutionFailed(e.to_string()))?;
         let bytes: Vec<u8> = streams.into_iter().flat_map(|(_, body, _)| body).collect();
-        let text = String::from_utf8_lossy(&bytes);
 
-        // emit_cbor writes one CHUNK frame; the runtime emits END for us.
         let output = req.output();
         output
             .start(false, None)
             .map_err(|e| OpError::ExecutionFailed(e.to_string()))?;
+
+        // Ask the model cartridge. `call_with_bytes` opens the call, writes each
+        // argument, and finishes it; arguments are addressed by media URN, not
+        // by position.
+        let response = req
+            .peer()
+            .call_with_bytes(
+                CLASSIFY_CAP,
+                &[
+                    (CLASSIFY_ITEM_MEDIA, bytes.as_slice()),
+                    (CLASSIFY_LABELS_MEDIA, LABELS.as_bytes()),
+                ],
+            )
+            .await
+            .map_err(|e| OpError::ExecutionFailed(e.to_string()))?;
+
+        // FORWARDING collector: inference is slow and the model reports
+        // progress as it goes. A plain `collect_bytes` REJECTS those LOG frames
+        // rather than discarding them silently, so a peer that talks must be
+        // collected through a forwarder. The peer's 0..1 progress is rescaled
+        // into the 0.0..0.9 slice of ours, leaving the last tenth for our own
+        // work below.
+        let judgment = response
+            .collect_bytes_forwarding(output, 0.0, 0.9)
+            .await
+            .map_err(|e| OpError::ExecutionFailed(e.to_string()))?;
+
+        // The judgment record is {"label", "confidence", "reason"}; the label is
+        // one of the labels we asked for.
+        let record: JsonValue = serde_json::from_slice(&judgment).map_err(|e| {
+            OpError::ExecutionFailed(format!(
+                "classify returned something that is not a semantic-judgment record: {e}"
+            ))
+        })?;
+        let label = record
+            .get("label")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                OpError::ExecutionFailed(
+                    "the semantic-judgment record has no string `label` field".to_string(),
+                )
+            })?;
+
+        output.finish(1.0, &format!("classified as {label}"));
         output
-            .emit_cbor(&ciborium::Value::Text(classify(&text).to_string()))
+            .emit_cbor(&ciborium::Value::Text(label.to_string()))
             .await
             .map_err(|e| OpError::ExecutionFailed(e.to_string()))
     }
