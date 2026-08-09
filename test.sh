@@ -114,15 +114,34 @@ c=json.load(open(sys.argv[1]))
 for cmd in c["languages"][sys.argv[2]]["build"]:
     print(cmd.replace(c["placeholder"], sys.argv[3]))' "$1" "$NAME"; }
 
+# The interpreter the Python stub is rendered against. `dx` exports PYTHON (the
+# project's environment, which has the `capdag` runtime); standalone, plain
+# python3. Without this the test picks up whatever python3 is first on PATH —
+# on macOS that is /usr/bin/python3, which has no cartridge runtime and never
+# will, so the stub would be reported broken because of the caller's PATH.
+STUB_PYTHON="${PYTHON:-python3}"
+
 toolchain_for() {
     case "$1" in
-        python) echo python3 ;;
+        python) echo "$STUB_PYTHON" ;;
         go)     echo go ;;
         rust)   echo cargo ;;
         js)     echo node ;;
         swift)  echo swift ;;
         *)      echo "" ;;
     esac
+}
+
+# What this stub imports, and how to get it — printed on any failure, because
+# "No module named 'capdag'" and "unknown revision v1.333.2790" both mean the
+# same thing (the runtime is not resolvable here) and neither says so.
+runtime_hint() {
+    local lang="$1"
+    contract '
+import json,sys
+c=json.load(open(sys.argv[1]))
+r=c["languages"][sys.argv[2]]["runtime"]
+print("        runtime: %s from %s — install: %s" % (r["package"], r["registry"], r["install"]))' "$lang"
 }
 
 for lang in "${LANGUAGES[@]}"; do
@@ -158,6 +177,7 @@ for lang in "${LANGUAGES[@]}"; do
         if ! ( cd "$dir" && eval "$cmd" ) >"$WORK/$lang.build.log" 2>&1; then
             bad "$lang: build step failed: $cmd"
             sed 's/^/        /' "$WORK/$lang.build.log" | head -15
+            runtime_hint "$lang"
             build_failed=true
             break
         fi
@@ -171,9 +191,21 @@ for lang in "${LANGUAGES[@]}"; do
     fi
     ok "$lang: builds an executable entry"
 
-    if ! ( cd "$dir" && "./$(entry_of "$lang")" manifest ) >"$WORK/$lang.manifest.json" 2>"$WORK/$lang.manifest.err"; then
+    # For an interpreted entry the shebang would pick its own interpreter,
+    # which is not necessarily the one this run is testing.
+    run_entry() {   # run_entry <dir> <args...>
+        local d="$1"; shift
+        if [[ "$lang" == "python" ]]; then
+            ( cd "$d" && "$STUB_PYTHON" "./$(entry_of "$lang")" "$@" )
+        else
+            ( cd "$d" && "./$(entry_of "$lang")" "$@" )
+        fi
+    }
+
+    if ! run_entry "$dir" manifest >"$WORK/$lang.manifest.json" 2>"$WORK/$lang.manifest.err"; then
         bad "$lang: \`manifest\` failed"
         sed 's/^/        /' "$WORK/$lang.manifest.err" | head -10
+        runtime_hint "$lang"
         continue
     fi
     if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$WORK/$lang.manifest.json" 2>/dev/null; then
@@ -185,7 +217,7 @@ for lang in "${LANGUAGES[@]}"; do
 
     # The cap must actually run: a manifest that advertises a cap the entry
     # cannot perform is worse than no stub at all.
-    if out=$( cd "$dir" && echo "I love this" | "./$(entry_of "$lang")" "$NAME" 2>/dev/null ); then
+    if out=$( echo "I love this" | run_entry "$dir" "$NAME" 2>/dev/null ); then
         if [[ "$out" == "positive" ]]; then
             ok "$lang: the cap runs (\"I love this\" -> positive)"
         else
