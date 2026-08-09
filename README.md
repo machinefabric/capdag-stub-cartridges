@@ -76,7 +76,7 @@ canonicalization has drifted from the rest.
 | Language | Entry | Runtime package |
 |---|---|---|
 | Python | `cartridge.py` | `capdag` on PyPI |
-| Rust | `target/release/<name>` | `capdag` on crates.io |
+| Rust | `target/release/<name>` | `capdag` at a git tag |
 | Go | `<name>`, compiled | `github.com/machinefabric/capdag-go` |
 | Swift | `.build/release/<name>` | `capdag-objc` (macOS only) |
 

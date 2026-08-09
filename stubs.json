@@ -24,7 +24,7 @@
       "entry": "target/release/__CARTRIDGE_NAME__",
       "build": ["cargo build --release"],
       "runtime": {
-        "registry": "crates.io",
+        "registry": "git tag",
         "package": "capdag",
         "install": "cargo build (the dependency is declared in Cargo.toml)"
       },
