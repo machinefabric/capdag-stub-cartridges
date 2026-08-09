@@ -164,5 +164,7 @@ fn build_manifest() -> CapManifest {
 async fn main() -> Result<()> {
     let mut runtime = CartridgeRuntime::with_manifest(build_manifest());
     runtime.register_op_type::<TagOp>(&cap_urn().to_string());
-    runtime.run().await
+    // `?`: the runtime returns its own RuntimeError, which anyhow adopts.
+    runtime.run().await?;
+    Ok(())
 }
