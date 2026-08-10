@@ -41,6 +41,23 @@ command -v python3 >/dev/null 2>&1 || { echo "python3 is required to read stubs.
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# Each stub is rendered into a fresh temp directory, so a compiled language
+# rebuilds its whole dependency tree every run — for Rust that is the entire
+# capdag crate, ~7 minutes cold, which overran the suite timeout on macOS and
+# killed the run mid-build.
+#
+# Point the compilers at a cache that OUTLIVES the temp dir. The stub is still
+# built from scratch as a project; only its dependencies are reused, and the
+# build is proving nothing about those.
+#
+# Under MachineFabric the caller passes CARGO_TARGET_DIR rooted in
+# machinefabric/build, so the artifacts land where that tree keeps them. Standalone — a clone of just this repo — there is no such tree, so the
+# cache goes beside the checkout rather than into a shared temp directory that
+# another checkout could collide with.
+STUB_CACHE="${STUB_BUILD_DIR:-$ROOT/.build-cache}"
+mkdir -p "$STUB_CACHE"
+export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$STUB_CACHE/cargo}"
+
 # jq is not assumed; stubs.json is read through python3, which is already
 # required by the Python stub's own toolchain check.
 contract() { python3 -c "$1" "$ROOT/stubs.json" "${@:2}"; }

@@ -4,3 +4,7 @@
 # superrepo's version instead of its own. Never commit it; `wsb init`
 # regenerates it per checkout.
 .wsb/
+
+# Dependency cache for the stub builds when this repo is used standalone.
+# Under MachineFabric the caller points these at machinefabric/build instead.
+.build-cache/
