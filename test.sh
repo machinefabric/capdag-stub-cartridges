@@ -72,7 +72,12 @@ c=json.load(open(sys.argv[1]))
 for lang in c["languages"].values():
     for f in lang["files"]:
         print(f["source"])' | LC_ALL=C sort)
-on_disk=$(cd "$ROOT" && find stubs -type f | LC_ALL=C sort)
+# `*.wstemplate` files are SOURCES for the stubs beside them, not stubs
+# themselves: `wsb` renders each one over its declared counterpart to stamp the
+# runtime version pins, so the rendered file is what stubs.json declares and
+# what a scaffolder writes. Counting the template as an undeclared stub would
+# report the mechanism that keeps the pins honest as a defect.
+on_disk=$(cd "$ROOT" && find stubs -type f ! -name '*.wstemplate' | LC_ALL=C sort)
 missing=$(LC_ALL=C comm -23 <(echo "$declared") <(echo "$on_disk"))
 extra=$(LC_ALL=C comm -13 <(echo "$declared") <(echo "$on_disk"))
 if [[ -z "$missing" ]]; then ok "every declared file exists"

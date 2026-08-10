@@ -1,0 +1,6 @@
+# wsb's per-project state. It records machine-ABSOLUTE paths, so a copy taken
+# from another machine resolves `{{ projects.*.version }}` against the wrong
+# project — which is exactly how a manifest once got stamped with the
+# superrepo's version instead of its own. Never commit it; `wsb init`
+# regenerates it per checkout.
+.wsb/
