@@ -18,7 +18,14 @@
 # never silently passed, because "nothing ran" and "everything passed" must not
 # look the same.
 #
-# Usage: ./test.sh [language]...        (default: every language in stubs.json)
+# Usage: ./test.sh [--prepare] [language]...   (default: every language in stubs.json)
+#
+#   --prepare  Render and BUILD every stub, then stop — no assertions past the
+#              build. A cold stub build compiles the whole capdag dependency
+#              tree (~7 minutes), which overran the harness's test timeout and
+#              killed the run mid-compile. The harness runs this as the suite's
+#              BUILD step, which is uncapped, so the test step that follows
+#              starts with a warm cache and only has to assert.
 
 set -uo pipefail
 
@@ -63,6 +70,10 @@ mkdir -p "$STUB_CACHE"
 # has to actually put it there.
 STUB_CARGO_CACHE="$STUB_CACHE/cargo"
 mkdir -p "$STUB_CARGO_CACHE"
+# Swift has the same problem and takes the same treatment: its declared entry is
+# `.build/release/<name>`, so the cache is reached through a symlink at `.build`.
+STUB_SWIFT_CACHE="$STUB_CACHE/swift"
+mkdir -p "$STUB_SWIFT_CACHE"
 
 # jq is not assumed; stubs.json is read through python3, which is already
 # required by the Python stub's own toolchain check.
@@ -70,7 +81,17 @@ contract() { python3 -c "$1" "$ROOT/stubs.json" "${@:2}"; }
 
 # macOS ships bash 3.2, which has neither `mapfile` nor `declare -A` nor
 # `${var^^}`. This file must run on the same machine the stubs are tested on.
-LANGUAGES=("$@")
+PREPARE=false
+REQUESTED=()
+for arg in "$@"; do
+    case "$arg" in
+        --prepare) PREPARE=true ;;
+        -*)        echo "unknown argument: $arg" >&2; exit 2 ;;
+        *)         REQUESTED+=("$arg") ;;
+    esac
+done
+
+LANGUAGES=(${REQUESTED[@]+"${REQUESTED[@]}"})
 if [[ ${#LANGUAGES[@]} -eq 0 ]]; then
     # Unquoted on purpose: language names are identifiers with no whitespace,
     # and TEST "CONTRACT" above fails if stubs.json ever disagrees.
@@ -159,6 +180,21 @@ toolchain_for() {
     esac
 }
 
+# Probe the exact driver the build will invoke, not a sibling that may be
+# independently healthy: `swift --version` answers happily on a swiftly install
+# whose `swift-build` cannot load its shared libraries, and `swift build` is what
+# the stub actually runs. A toolchain that cannot start is an absent toolchain,
+# not a capdag defect, so it must skip rather than fail.
+toolchain_runs() {   # toolchain_runs <tool>
+    command -v "$1" >/dev/null 2>&1 || return 1
+    case "$1" in
+        go)     go version >/dev/null 2>&1 ;;
+        swift)  swift build --help >/dev/null 2>&1 ;;
+        cargo)  cargo --version >/dev/null 2>&1 ;;
+        *)      "$1" --version >/dev/null 2>&1 ;;
+    esac
+}
+
 # What this stub imports, and how to get it — printed on any failure, because
 # "No module named 'capdag'" and "unknown revision v1.333.2790" both mean the
 # same thing (the runtime is not resolvable here) and neither says so.
@@ -179,8 +215,8 @@ for lang in "${LANGUAGES[@]}"; do
         bad "no toolchain known for '$lang' — add it to toolchain_for() before adding the stub"
         continue
     fi
-    if ! command -v "$tool" >/dev/null 2>&1; then
-        skip "$lang ($tool not installed)"
+    if ! toolchain_runs "$tool"; then
+        skip "$lang ($tool not installed, or its toolchain cannot start)"
         continue
     fi
 
@@ -199,7 +235,8 @@ for lang in "${LANGUAGES[@]}"; do
     fi
 
     # Reuse the compiled dependency tree across runs (see STUB_CACHE above).
-    [[ "$lang" == "rust" ]] && ln -sfn "$STUB_CARGO_CACHE" "$dir/target"
+    [[ "$lang" == "rust" ]]  && ln -sfn "$STUB_CARGO_CACHE" "$dir/target"
+    [[ "$lang" == "swift" ]] && ln -sfn "$STUB_SWIFT_CACHE" "$dir/.build"
 
     build_failed=false
     while IFS= read -r cmd; do
@@ -213,6 +250,13 @@ for lang in "${LANGUAGES[@]}"; do
         fi
     done < <(build_cmds_of "$lang")
     [[ "$build_failed" == true ]] && continue
+
+    if [[ "$PREPARE" == true ]]; then
+        # The point of this pass is the compile that just happened; the caches
+        # it filled are what the test pass will reuse.
+        ok "$lang: dependencies compiled"
+        continue
+    fi
 
     entry="$dir/$(entry_of "$lang")"
     if [[ ! -x "$entry" ]]; then
@@ -270,6 +314,16 @@ done
 # ---------------------------------------------------------------------------
 # The parity contract.
 # ---------------------------------------------------------------------------
+if [[ "$PREPARE" == true ]]; then
+    echo
+    echo "prepared: ${LANGUAGES[*]} — $PASS built, $FAIL failed"
+    if [[ ${#SKIPPED[@]} -gt 0 ]]; then
+        echo "${YELLOW}skipped: ${SKIPPED[*]}${NC}"
+    fi
+    [[ "$FAIL" -eq 0 ]] || exit 1
+    exit 0
+fi
+
 echo "PARITY — every language's manifest is identical"
 compared=(${MANIFEST_LANGS[@]+"${MANIFEST_LANGS[@]}"})
 if [[ ${#compared[@]} -lt 2 ]]; then
