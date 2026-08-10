@@ -56,7 +56,13 @@ trap 'rm -rf "$WORK"' EXIT
 # another checkout could collide with.
 STUB_CACHE="${STUB_BUILD_DIR:-$ROOT/.build-cache}"
 mkdir -p "$STUB_CACHE"
-export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$STUB_CACHE/cargo}"
+#
+# The cache is reached through a SYMLINK at the project's own `target/` rather
+# than by redirecting CARGO_TARGET_DIR: the contract declares the entry as
+# `target/release/<name>` and that is the path the host launches, so the build
+# has to actually put it there.
+STUB_CARGO_CACHE="$STUB_CACHE/cargo"
+mkdir -p "$STUB_CARGO_CACHE"
 
 # jq is not assumed; stubs.json is read through python3, which is already
 # required by the Python stub's own toolchain check.
@@ -191,6 +197,9 @@ for lang in "${LANGUAGES[@]}"; do
     else
         ok "$lang: no placeholder survives rendering"
     fi
+
+    # Reuse the compiled dependency tree across runs (see STUB_CACHE above).
+    [[ "$lang" == "rust" ]] && ln -sfn "$STUB_CARGO_CACHE" "$dir/target"
 
     build_failed=false
     while IFS= read -r cmd; do
