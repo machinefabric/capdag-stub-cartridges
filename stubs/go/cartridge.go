@@ -12,7 +12,7 @@
 //
 // Develop it with:
 //
-//	go build -o __CARTRIDGE_NAME__ .   # the entry the host launches
+//	go build -buildvcs=false -o __CARTRIDGE_NAME__ .   # the entry the host launches
 //	capdag dev-install .               # install/update under the local `dev` slug
 //	echo "I love this" | capdag __CARTRIDGE_NAME__
 //	# edit the labels or the peer cap, then rebuild + re-install to update

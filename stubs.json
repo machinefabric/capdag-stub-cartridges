@@ -37,10 +37,18 @@
       ]
     },
     "go": {
+      "$comment": [
+        "-buildvcs=false because a scaffold is not a git repository. Go stamps",
+        "VCS metadata into a binary by default, and go1.26 with git2.53 fails",
+        "the build outright when the probe returns exit 128 rather than",
+        "recording no VCS — so the command this file documents did not build",
+        "the project this file creates. Nothing here wants the stamp: a",
+        "cartridge binary is identified by its content hash and its signature."
+      ],
       "flag": "--go",
       "display": "Go",
       "entry": "__CARTRIDGE_NAME__",
-      "build": ["go mod tidy", "go build -o __CARTRIDGE_NAME__ ."],
+      "build": ["go mod tidy", "go build -buildvcs=false -o __CARTRIDGE_NAME__ ."],
       "runtime": {
         "registry": "git tag",
         "package": "github.com/machinefabric/capdag-go",
