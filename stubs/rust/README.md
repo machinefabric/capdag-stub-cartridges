@@ -29,7 +29,7 @@ The `capdag` crate's build script bakes two versions into the crate and treats
 both as mandatory: `MFR_FABRIC_MANIFEST_VERSION` (which fabric manifest this
 cartridge is compiled against) and `MFR_CARTRIDGE_REGISTRY_VERSION` (which
 cartridge registry regime). Without them `cargo build` fails with a message
-telling you to build through `dx`, which is the MachineFabric workspace's own
+telling you to build through a workspace tool, which is MachineFabric's own
 tool — not something a cartridge project has.
 
 `.cargo/config.toml` sets them, which is what makes a plain `cargo build` work

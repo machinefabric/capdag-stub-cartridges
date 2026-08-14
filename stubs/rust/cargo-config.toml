@@ -1,6 +1,6 @@
 # capdag's build script bakes two versions into the crate and treats both as
 # MANDATORY — a plain `cargo build` without them fails with a message telling
-# you to build through `dx`, which is the MachineFabric workspace's tool and not
+# you to build through a workspace tool, which is MachineFabric's own and not
 # something a cartridge project has. Setting them here is what makes `cargo
 # build` work in a scaffolded project.
 #
