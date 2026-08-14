@@ -163,7 +163,7 @@ c=json.load(open(sys.argv[1]))
 for cmd in c["languages"][sys.argv[2]]["build"]:
     print(cmd.replace(c["placeholder"], sys.argv[3]))' "$1" "$NAME"; }
 
-# The interpreter the Python stub is rendered against. `dx` exports PYTHON (the
+# The interpreter the Python stub is rendered against. the workspace build tool exports PYTHON (the
 # project's environment, which has the `capdag` runtime); standalone, plain
 # python3. Without this the test picks up whatever python3 is first on PATH —
 # on macOS that is /usr/bin/python3, which has no cartridge runtime and never
