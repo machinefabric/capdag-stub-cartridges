@@ -167,6 +167,7 @@ fn build_manifest() -> CapManifest {
         output_description:
             "One of the literal strings 'positive', 'neutral', or 'negative'.".to_string(),
         is_sequence: false,
+        streaming: false,
         metadata: None,
     });
 

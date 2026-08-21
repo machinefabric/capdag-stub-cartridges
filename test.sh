@@ -30,6 +30,8 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=localize-deps.sh
+source "$ROOT/localize-deps.sh"
 NAME="stubcheck"          # the project name every stub is rendered under
 
 if [[ -t 1 ]]; then
@@ -232,6 +234,14 @@ for lang in "${LANGUAGES[@]}"; do
         bad "$lang: the rendered project still contains $PLACEHOLDER"
     else
         ok "$lang: no placeholder survives rendering"
+    fi
+
+    # Build against the sibling WORKING COPIES, not the release the stub pins
+    # (which this checkout has not tagged yet) — see localize-deps.sh. After
+    # the byte checks above: what a scaffolder writes was already judged.
+    if ! localize_stub_deps "$lang" "$dir" "$(dirname "$ROOT")"; then
+        bad "$lang: could not point the rendered project at the working copies"
+        continue
     fi
 
     # Reuse the compiled dependency tree across runs (see STUB_CACHE above).
