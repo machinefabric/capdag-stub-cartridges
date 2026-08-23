@@ -180,7 +180,7 @@ fn build_manifest() -> CapManifest {
 
     CapManifest::new(
         "__CARTRIDGE_NAME__".to_string(),
-        "0.1.0".to_string(),
+        env!("CARGO_PKG_VERSION").to_string(), // the version Cargo.toml declares
         CartridgeChannel::Nightly, // 'Release' or 'Nightly'; nightly for dev.
         None,                      // None => dev cartridge (installed locally).
         "Classify a piece of text as positive, neutral, or negative.".to_string(),

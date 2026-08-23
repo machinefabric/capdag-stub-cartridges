@@ -150,7 +150,7 @@ func buildManifest() *bifaci.CapManifest {
 	c.CapDescription = cap.StringPtr("Classify a piece of text as positive, neutral, or negative.")
 	stdin := inMedia
 	position := 0
-	c.Args = []cap.CapArg{{
+{% raw %}	c.Args = []cap.CapArg{{
 		MediaUrn: inMedia,
 		Required: true,
 		Sources: []cap.ArgSource{
@@ -159,7 +159,7 @@ func buildManifest() *bifaci.CapManifest {
 		},
 		ArgDescription: cap.StringPtr("UTF-8 text to classify."),
 	}}
-	c.Output = &cap.CapOutput{
+{% endraw %}	c.Output = &cap.CapOutput{
 		MediaUrn:          outMedia,
 		OutputDescription: "One of the literal strings 'positive', 'neutral', or 'negative'.",
 	}
@@ -173,7 +173,7 @@ func buildManifest() *bifaci.CapManifest {
 
 	return capdag.NewCapManifest(
 		"__CARTRIDGE_NAME__",
-		"1.55.333",
+		"{{ project.version }}",
 		"nightly", // 'nightly' or 'release'; nightly for dev.
 		nil,       // nil => dev cartridge (installed locally).
 		"Classify a piece of text as positive, neutral, or negative.",

@@ -1,6 +1,6 @@
 [package]
 name = "__CARTRIDGE_NAME__"
-version = "0.1.0"
+version = "{{ project.version }}"
 edition = "2021"
 
 [dependencies]
