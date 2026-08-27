@@ -1,4 +1,4 @@
-// __CARTRIDGE_NAME__ — a MachineFabric cartridge (Swift), scaffolded by `capdag new`.
+// __CARTRIDGE_NAME__ — a CapDAG cartridge (Swift), scaffolded by `capdag new`.
 //
 // Reads UTF-8 text on stdin and emits a single tag word: `positive`,
 // `neutral`, or `negative`.

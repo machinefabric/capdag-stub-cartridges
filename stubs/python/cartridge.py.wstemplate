@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""__CARTRIDGE_NAME__ — a MachineFabric cartridge (Python), scaffolded by `capdag new`.
+"""__CARTRIDGE_NAME__ — a CapDAG cartridge (Python), scaffolded by `capdag new`.
 
 Reads UTF-8 text on stdin and emits a single tag word: `positive`,
 `neutral`, or `negative`.

@@ -1,6 +1,6 @@
 # __CARTRIDGE_NAME__
 
-A MachineFabric cartridge scaffolded by `capdag new`. It reads UTF-8 text on
+A CapDAG cartridge scaffolded by `capdag new`. It reads UTF-8 text on
 stdin and emits `positive`, `neutral`, or `negative`.
 
 ## Develop
