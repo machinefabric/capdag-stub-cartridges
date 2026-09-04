@@ -7,7 +7,7 @@ let package = Package(
         .macOS(.v13)
     ],
     dependencies: [
-        .package(url: "https://github.com/machinefabric/capdag-objc.git", from: "1.479.78"),
+        .package(url: "https://github.com/machinefabric/capdag-objc.git", from: "1.480.80"),
         .package(url: "https://github.com/jowharshamshiri/ops-objc.git", from: "1.19.17"),
     ],
     targets: [
