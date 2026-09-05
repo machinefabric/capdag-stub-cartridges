@@ -173,7 +173,7 @@ func buildManifest() *bifaci.CapManifest {
 
 	return capdag.NewCapManifest(
 		"__CARTRIDGE_NAME__",
-		"1.125.1223",
+		"1.126.1236",
 		"nightly", // 'nightly' or 'release'; nightly for dev.
 		nil,       // nil => dev cartridge (installed locally).
 		"Classify a piece of text as positive, neutral, or negative.",
