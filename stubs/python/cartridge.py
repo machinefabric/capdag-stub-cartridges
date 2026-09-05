@@ -156,7 +156,7 @@ def build_manifest() -> CapManifest:
 
     return CapManifest(
         name="__CARTRIDGE_NAME__",
-        version="1.121.1171",
+        version="1.122.1183",
         channel="nightly",          # 'nightly' or 'release'; nightly for dev.
         registry_url=None,           # None => dev cartridge (installed locally).
         description="Classify a piece of text as positive, neutral, or negative.",
