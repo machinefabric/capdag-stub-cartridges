@@ -274,7 +274,11 @@ for lang in "${LANGUAGES[@]}"; do
         [[ -n "$cmd" ]] || continue
         if ! ( cd "$dir" && eval "$cmd" ) >"$WORK/$lang.build.log" 2>&1; then
             bad "$lang: build step failed: $cmd"
-            sed 's/^/        /' "$WORK/$lang.build.log" | head -15
+            # The LAST lines, not the first. A compiler reports progress and
+            # then says what went wrong, so `head` showed fifteen lines of
+            # "Compiling …" and cut off the error every time — every Swift
+            # failure here read as a build that simply stopped.
+            sed 's/^/        /' "$WORK/$lang.build.log" | tail -25
             runtime_hint "$lang"
             build_failed=true
             break
