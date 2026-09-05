@@ -246,7 +246,28 @@ for lang in "${LANGUAGES[@]}"; do
 
     # Reuse the compiled dependency tree across runs (see STUB_CACHE above).
     [[ "$lang" == "rust" ]]  && ln -sfn "$STUB_CARGO_CACHE" "$dir/target"
-    [[ "$lang" == "swift" ]] && ln -sfn "$STUB_SWIFT_CACHE" "$dir/.build"
+    if [[ "$lang" == "swift" ]]; then
+        ln -sfn "$STUB_SWIFT_CACHE" "$dir/.build"
+        # The clang MODULE cache is the one part that cannot be shared, and it
+        # lives inside the scratch directory the symlink above reuses.
+        #
+        # A `.pcm` records the module-cache path it was compiled under, and
+        # clang refuses one whose recorded path is not the current one. Each
+        # run builds in a fresh `mktemp -d`, so every run after the first was
+        # handed modules stamped with the PREVIOUS run's temp directory:
+        #
+        #   error: precompiled file '…/tmp.RdJ…/ModuleCache/…_AvailabilityInternal-….pcm'
+        #   was compiled with module cache path '…/tmp.roW…/ModuleCache/…'
+        #
+        # and the failure surfaced three modules deep, as `could not build
+        # module '_DarwinFoundation1'` — which reads like a broken SDK.
+        #
+        # Removed rather than moved out of the shared tree: it is a CACHE, the
+        # dependency objects beside it are what makes reuse worth having, and
+        # rebuilding the system modules costs seconds against the minutes those
+        # objects save.
+        rm -rf "$STUB_SWIFT_CACHE"/*/*/ModuleCache "$STUB_SWIFT_CACHE"/*/*/*/ModuleCache
+    fi
 
     build_failed=false
     while IFS= read -r cmd; do
