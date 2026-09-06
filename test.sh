@@ -45,7 +45,26 @@ ok()   { PASS=$((PASS + 1)); echo "  ${GREEN}ok${NC}   — $1"; }
 bad()  { FAIL=$((FAIL + 1)); echo "  ${RED}FAIL${NC} — $1"; }
 skip() { SKIPPED+=("$1"); echo "  ${DIM}skip — $1${NC}"; }
 
-command -v python3 >/dev/null 2>&1 || { echo "python3 is required to read stubs.json" >&2; exit 1; }
+# The interpreter this script itself runs, for reading stubs.json and the
+# manifests. PYTHON is what the build tool exports; falling back to python3 is
+# for running this standalone.
+#
+# The name `python3` is not assumed to exist. On Windows it does not: the
+# interpreter there is `python`, and MSYS2's login shell has neither on PATH
+# unless the caller put one there — so a bare `command -v python3` reported
+# "python3 is required" on a machine that had Python all along, and both stub
+# suites failed before running a single check.
+PY="${PYTHON:-}"
+if [ -z "$PY" ]; then
+    for candidate in python3 python; do
+        if command -v "$candidate" >/dev/null 2>&1; then PY="$candidate"; break; fi
+    done
+fi
+if [ -z "$PY" ] || ! "$PY" -c "import sys" >/dev/null 2>&1; then
+    echo "no usable Python to read stubs.json: \$PYTHON is '${PYTHON:-unset}' and \
+neither python3 nor python runs from here" >&2
+    exit 1
+fi
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -77,9 +96,9 @@ mkdir -p "$STUB_CARGO_CACHE"
 STUB_SWIFT_CACHE="$STUB_CACHE/swift"
 mkdir -p "$STUB_SWIFT_CACHE"
 
-# jq is not assumed; stubs.json is read through python3, which is already
-# required by the Python stub's own toolchain check.
-contract() { python3 -c "$1" "$ROOT/stubs.json" "${@:2}"; }
+# jq is not assumed; stubs.json is read through the resolved interpreter,
+# which the Python stub's own toolchain needs anyway.
+contract() { "$PY" -c "$1" "$ROOT/stubs.json" "${@:2}"; }
 
 # macOS ships bash 3.2, which has neither `mapfile` nor `declare -A` nor
 # `${var^^}`. This file must run on the same machine the stubs are tested on.
@@ -165,12 +184,14 @@ c=json.load(open(sys.argv[1]))
 for cmd in c["languages"][sys.argv[2]]["build"]:
     print(cmd.replace(c["placeholder"], sys.argv[3]))' "$1" "$NAME"; }
 
-# The interpreter the Python stub is rendered against. the workspace build tool exports PYTHON (the
-# project's environment, which has the `capdag` runtime); standalone, plain
-# python3. Without this the test picks up whatever python3 is first on PATH —
-# on macOS that is /usr/bin/python3, which has no cartridge runtime and never
-# will, so the stub would be reported broken because of the caller's PATH.
-STUB_PYTHON="${PYTHON:-python3}"
+# The interpreter the Python stub is rendered against: the same one resolved
+# above. The build tool exports PYTHON, which is the project's environment and
+# the one that has the `capdag` runtime.
+#
+# Without this the stub would be run by whatever `python3` is first on PATH —
+# on macOS /usr/bin/python3, which has no cartridge runtime and never will, so
+# the stub would be reported broken because of the caller's PATH.
+STUB_PYTHON="$PY"
 
 toolchain_for() {
     case "$1" in
@@ -317,7 +338,7 @@ for lang in "${LANGUAGES[@]}"; do
         runtime_hint "$lang"
         continue
     fi
-    if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$WORK/$lang.manifest.json" 2>/dev/null; then
+    if ! "$PY" -c "import json,sys; json.load(open(sys.argv[1]))" "$WORK/$lang.manifest.json" 2>/dev/null; then
         bad "$lang: \`manifest\` did not print valid JSON"
         continue
     fi
@@ -368,14 +389,14 @@ if [[ ${#compared[@]} -lt 2 ]]; then
 else
     base="${compared[0]}"
     for other in "${compared[@]:1}"; do
-        if python3 -c '
+        if "$PY" -c '
 import json,sys
 a=json.load(open(sys.argv[1])); b=json.load(open(sys.argv[2]))
 sys.exit(0 if a==b else 1)' "$WORK/$base.manifest.json" "$WORK/$other.manifest.json"; then
             ok "$base and $other agree"
         else
             bad "$base and $other disagree:"
-            python3 -c '
+            "$PY" -c '
 import json,sys
 def flat(d,p=""):
     out={}
