@@ -50,19 +50,25 @@ skip() { SKIPPED+=("$1"); echo "  ${DIM}skip — $1${NC}"; }
 # for running this standalone.
 #
 # The name `python3` is not assumed to exist. On Windows it does not: the
-# interpreter there is `python`, and MSYS2's login shell has neither on PATH
-# unless the caller put one there — so a bare `command -v python3` reported
+# harness bootstrap there reports "fingerprinting with py", and MSYS2's login
+# shell carries no `python3` at all — so a bare `command -v python3` reported
 # "python3 is required" on a machine that had Python all along, and both stub
 # suites failed before running a single check.
 PY="${PYTHON:-}"
 if [ -z "$PY" ]; then
-    for candidate in python3 python; do
-        if command -v "$candidate" >/dev/null 2>&1; then PY="$candidate"; break; fi
+    # `py` is Windows's launcher and the name that actually exists there —
+    # the harness bootstrap resolves `py -3` then `python`, and never
+    # `python3`. Tried last so a POSIX machine still prefers its own names.
+    for candidate in python3 python py; do
+        if command -v "$candidate" >/dev/null 2>&1 \
+           && "$candidate" -c "import sys; sys.exit(0 if sys.version_info[0] == 3 else 1)" >/dev/null 2>&1; then
+            PY="$candidate"; break
+        fi
     done
 fi
 if [ -z "$PY" ] || ! "$PY" -c "import sys" >/dev/null 2>&1; then
-    echo "no usable Python to read stubs.json: \$PYTHON is '${PYTHON:-unset}' and \
-neither python3 nor python runs from here" >&2
+    echo "no usable Python 3 to read stubs.json: \$PYTHON is '${PYTHON:-unset}' \
+and none of python3, python or py runs from here" >&2
     exit 1
 fi
 
@@ -98,7 +104,19 @@ mkdir -p "$STUB_SWIFT_CACHE"
 
 # jq is not assumed; stubs.json is read through the resolved interpreter,
 # which the Python stub's own toolchain needs anyway.
-contract() { "$PY" -c "$1" "$ROOT/stubs.json" "${@:2}"; }
+# Python opens stdout in TEXT mode, which on Windows turns every \n into
+# \r\n. Those carriage returns then travel into shell variables: `case
+# "python\r"` matches none of the language patterns and fell through to "no
+# toolchain known for 'python'", and `comm` reported the same fifteen files as
+# both declared-but-absent and present-but-undeclared, because one side had
+# the \r and the other did not.
+#
+# So the interpreter is told to end lines with \n on every platform. Done
+# here, at the one place these values are produced, rather than by stripping
+# \r from each caller.
+CONTRACT_PRELUDE='import sys; sys.stdout.reconfigure(newline="\n")
+'
+contract() { "$PY" -c "$CONTRACT_PRELUDE$1" "$ROOT/stubs.json" "${@:2}"; }
 
 # macOS ships bash 3.2, which has neither `mapfile` nor `declare -A` nor
 # `${var^^}`. This file must run on the same machine the stubs are tested on.
