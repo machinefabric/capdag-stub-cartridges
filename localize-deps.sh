@@ -41,12 +41,39 @@ _rewrite_in_place() {   # _rewrite_in_place <file> <sed-expression>
     fi
     mv "$scratch" "$file"
 }
+# A path the LANGUAGE TOOLCHAIN can open, not just this shell.
+#
+# On Windows these suites run under MSYS2, where an absolute path is
+# `/c/ProgramData/...`. Every toolchain a stub builds with — go, cargo,
+# swiftpm — is a NATIVE Windows program, and none of them can resolve that
+# form. The guard above each rewrite passes anyway, because `[[ -f ... ]]` is
+# bash resolving a path bash understands, so the manifest was written with a
+# path that only the checker could read:
+#
+#   replacement directory /c/ProgramData/.../capdag/capdag-go does not exist
+#   The system cannot find the path specified. (os error 3)
+#
+# Both name a directory that is present. `cygpath -m` gives the mixed form
+# (`C:/ProgramData/...`) — a drive letter with forward slashes, which every one
+# of these manifests accepts without escaping, unlike the backslash form.
+#
+# A no-op anywhere else: outside MSYS2 there is no cygpath, and the path is
+# already native.
+_native_path() {
+    if command -v cygpath >/dev/null 2>&1; then
+        cygpath -m "$1"
+    else
+        printf '%s' "$1"
+    fi
+}
+
 localize_stub_deps() {
     local lang="$1" dir="$2" capdag_root="$3"
     case "$lang" in
         rust)
             local manifest="$dir/Cargo.toml" path="$capdag_root/capdag-rs"
             [[ -f "$path/Cargo.toml" ]] || { echo "localize_stub_deps: no capdag-rs checkout at $path" >&2; return 1; }
+            path="$(_native_path "$path")"
             grep -qE '^capdag = \{ git = "[^"]+", tag = "v[0-9.]+" \}$' "$manifest" \
                 || { echo "localize_stub_deps: $manifest has no \`capdag = { git = …, tag = … }\` line to localize — the rust stub template changed; update localize-deps.sh" >&2; return 1; }
             _rewrite_in_place "$manifest" "s|^capdag = \{ git = \"[^\"]+\", tag = \"v[0-9.]+\" \}$|capdag = { path = \"$path\" }|" \
@@ -55,6 +82,7 @@ localize_stub_deps() {
         go)
             local manifest="$dir/go.mod" path="$capdag_root/capdag-go"
             [[ -f "$path/go.mod" ]] || { echo "localize_stub_deps: no capdag-go checkout at $path" >&2; return 1; }
+            path="$(_native_path "$path")"
             grep -qE '^require github.com/machinefabric/capdag-go v[0-9.]+$' "$manifest" \
                 || { echo "localize_stub_deps: $manifest has no \`require github.com/machinefabric/capdag-go vX.Y.Z\` line to localize — the go stub template changed; update localize-deps.sh" >&2; return 1; }
             printf '\nreplace github.com/machinefabric/capdag-go => %s\n' "$path" >> "$manifest"
@@ -62,6 +90,7 @@ localize_stub_deps() {
         swift)
             local manifest="$dir/Package.swift" path="$capdag_root/capdag-objc"
             [[ -f "$path/Package.swift" ]] || { echo "localize_stub_deps: no capdag-objc checkout at $path" >&2; return 1; }
+            path="$(_native_path "$path")"
             grep -qE '\.package\(url: "https://github.com/machinefabric/capdag-objc.git", from: "[0-9.]+"\)' "$manifest" \
                 || { echo "localize_stub_deps: $manifest has no \`.package(url: …capdag-objc.git, from: …)\` entry to localize — the swift stub template changed; update localize-deps.sh" >&2; return 1; }
             _rewrite_in_place "$manifest" "s|\.package\(url: \"https://github.com/machinefabric/capdag-objc.git\", from: \"[0-9.]+\"\)|.package(path: \"$path\")|" \

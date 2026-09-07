@@ -381,7 +381,15 @@ for lang in "${LANGUAGES[@]}"; do
         # then really ran, which is a stronger result than the offline case.
         ok "$lang: the cap runs against a live host (\"I love this\" -> positive)"
     else
-        bad "$lang: expected the peer call to be reported as unroutable without a host, got: ${out:0:200}"
+        # The LAST lines, not the first 200 characters.
+        #
+        # A traceback puts the exception on its final line and the frames above
+        # it; `${out:0:200}` showed the header and two file paths, cut off at
+        # "Traceback (most recent call last):" — the one part that says nothing
+        # about what went wrong. This failure was undiagnosable from a Windows
+        # log for exactly that reason.
+        bad "$lang: expected the peer call to be reported as unroutable without a host, got:"
+        printf '%s\n' "$out" | tail -12 | sed 's/^/        /' >&2
     fi
 done
 
