@@ -86,6 +86,24 @@ localize_stub_deps() {
             grep -qE '^require github.com/machinefabric/capdag-go v[0-9.]+$' "$manifest" \
                 || { echo "localize_stub_deps: $manifest has no \`require github.com/machinefabric/capdag-go vX.Y.Z\` line to localize — the go stub template changed; update localize-deps.sh" >&2; return 1; }
             printf '\nreplace github.com/machinefabric/capdag-go => %s\n' "$path" >> "$manifest"
+            # Go applies only the MAIN module's replace directives. The working
+            # copy of capdag-go may itself be built against working copies (its
+            # generated model code runs on tagged-urn-go and lungo-go), which it
+            # names with replaces of its own — and those Go ignores here, so the
+            # stub resolves the placeholder versions they carry from the network
+            # and fails ("unknown revision v0.0.0"). So the stub takes each of
+            # them, its relative path resolved against capdag-go.
+            local line module target resolved
+            while IFS= read -r line; do
+                [[ "$line" =~ ^replace[[:space:]]+([^[:space:]]+)[[:space:]]+=\>[[:space:]]+([^[:space:]]+)[[:space:]]*$ ]] || continue
+                module="${BASH_REMATCH[1]}" target="${BASH_REMATCH[2]}"
+                if [[ "$target" == .* ]]; then
+                    resolved="$(cd "$capdag_root/capdag-go" && cd "$target" 2>/dev/null && pwd)" \
+                        || { echo "localize_stub_deps: capdag-go replaces $module with $target, which does not exist" >&2; return 1; }
+                    target="$(_native_path "$resolved")"
+                fi
+                printf 'replace %s => %s\n' "$module" "$target" >> "$manifest"
+            done < "$capdag_root/capdag-go/go.mod"
             ;;
         swift)
             local manifest="$dir/Package.swift" path="$capdag_root/capdag-objc"
