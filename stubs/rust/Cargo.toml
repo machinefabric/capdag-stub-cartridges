@@ -1,6 +1,6 @@
 [package]
 name = "__CARTRIDGE_NAME__"
-version = "1.178.1824"
+version = "1.179.1835"
 edition = "2021"
 
 [dependencies]
@@ -9,7 +9,7 @@ anyhow = "1.0"
 # which is unpublishable, and cargo requires a version requirement on every
 # dependency. The tag is stamped from capdag's own version.txt, so it tracks
 # what capdag's next release tags instead of drifting until someone notices.
-capdag = { git = "https://github.com/machinefabric/capdag-rs", tag = "v1.830.55" }
+capdag = { git = "https://github.com/machinefabric/capdag-rs", tag = "v1.833.19" }
 ciborium = "0.2"
 serde_json = "1.0"
 tokio = { version = "1.0", features = ["full"] }
