@@ -11,7 +11,7 @@
 //! calls a peer, one manifest, one main().
 //!
 //! Develop it with:
-//!     cargo build --release                     # the entry the host launches
+//!     cargo build --release --target-dir target # the entry the host launches
 //!     capdag dev-install .                      # install under the local `dev` slug
 //!     echo "I love this" | capdag __CARTRIDGE_NAME__
 //!     # edit the labels or the peer cap, then re-run both to update

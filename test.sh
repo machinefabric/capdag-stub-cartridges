@@ -84,17 +84,17 @@ trap 'rm -rf "$WORK"' EXIT
 # built from scratch as a project; only its dependencies are reused, and the
 # build is proving nothing about those.
 #
-# Under MachineFabric the caller passes CARGO_TARGET_DIR rooted in
-# machinefabric/build, so the artifacts land where that tree keeps them. Standalone — a clone of just this repo — there is no such tree, so the
+# Under MachineFabric the caller passes STUB_BUILD_DIR rooted in its build
+# tree, so the artifacts land where that tree keeps them. Standalone — a clone of just this repo — there is no such tree, so the
 # cache goes beside the checkout rather than into a shared temp directory that
 # another checkout could collide with.
 STUB_CACHE="${STUB_BUILD_DIR:-$ROOT/.build-cache}"
 mkdir -p "$STUB_CACHE"
 #
-# The cache is reached through a SYMLINK at the project's own `target/` rather
-# than by redirecting CARGO_TARGET_DIR: the contract declares the entry as
-# `target/release/<name>` and that is the path the host launches, so the build
-# has to actually put it there.
+# The cache is reached through a SYMLINK at the project's own `target/`: the
+# contract declares the entry as `target/release/<name>`, the path the host
+# launches, and its build command names that directory (`--target-dir target`),
+# so the build puts it there under any cargo.
 STUB_CARGO_CACHE="$STUB_CACHE/cargo"
 mkdir -p "$STUB_CARGO_CACHE"
 # Swift has the same problem and takes the same treatment: its declared entry is

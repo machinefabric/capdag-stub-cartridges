@@ -21,8 +21,15 @@
     "rust": {
       "flag": "--rust",
       "display": "Rust",
+      "$comment": [
+        "--target-dir target because the entry is declared in the project's own",
+        "target directory, and that is where the host launches it. Cargo puts it",
+        "there by default, but not every cargo does: one that keeps build output",
+        "in a cache of its own (QuickRust) builds elsewhere unless told, and the",
+        "command this file documents then did not produce the entry it names."
+      ],
       "entry": "target/release/__CARTRIDGE_NAME__",
-      "build": ["cargo build --release"],
+      "build": ["cargo build --release --target-dir target"],
       "runtime": {
         "registry": "git tag",
         "package": "capdag",

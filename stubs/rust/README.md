@@ -6,8 +6,9 @@ stdin and emits `positive`, `neutral`, or `negative`.
 ## Develop
 
 ```bash
-# 1. Build the entry the host launches:
-cargo build --release
+# 1. Build the entry the host launches, target/release/__CARTRIDGE_NAME__
+#    (--target-dir says so to a cargo that keeps build output elsewhere):
+cargo build --release --target-dir target
 
 # 2. Install this cartridge under the local `dev` slug:
 capdag dev-install .
@@ -17,7 +18,7 @@ echo "I love this" | capdag __CARTRIDGE_NAME__
 # => positive
 
 # 4. Edit the labels or the peer cap in src/main.rs, then re-run steps 1-2:
-cargo build --release && capdag dev-install .
+cargo build --release --target-dir target && capdag dev-install .
 ```
 
 Unlike the Python cartridge, the entry here is a COMPILED binary, so an edit
