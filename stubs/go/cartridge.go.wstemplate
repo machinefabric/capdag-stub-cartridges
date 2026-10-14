@@ -150,26 +150,26 @@ func buildManifest() *bifaci.CapManifest {
 	c.CapDescription = cap.StringPtr("Classify a piece of text as positive, neutral, or negative.")
 	stdin := inMedia
 	position := 0
-{% raw %}	c.Args = []cap.CapArg{{
-		MediaUrn: inMedia,
-		Required: true,
-		Sources: []cap.ArgSource{
+	// Every argument and every output has a name: the label a machine wires
+	// it by. The media URN is still what identifies it.
+{% raw %}	c.Args = []cap.CapArg{cap.NewCapArgWithDescription(
+		inMedia, "text", true,
+		[]cap.ArgSource{
 			{Stdin: &stdin},
 			{Position: &position},
 		},
-		ArgDescription: cap.StringPtr("UTF-8 text to classify."),
-	}}
-{% endraw %}	c.Output = &cap.CapOutput{
-		MediaUrn:          outMedia,
-		OutputDescription: "One of the literal strings 'positive', 'neutral', or 'negative'.",
-	}
+		"UTF-8 text to classify.",
+	)}
+{% endraw %}	c.AddOutput(*cap.NewCapOutput(
+		outMedia, "tag",
+		"One of the literal strings 'positive', 'neutral', or 'negative'.",
+	))
 
 	// Every cartridge advertises CAP_IDENTITY; the runtime auto-registers its handler.
-	identityURN, err := urn.NewCapUrnFromString(capdag.CapIdentity)
+	identity, err := cap.IdentityCap()
 	if err != nil {
-		panic(fmt.Sprintf("BUG: CapIdentity is invalid: %v", err))
+		panic(fmt.Sprintf("BUG: the identity cap is invalid: %v", err))
 	}
-	identity := cap.NewCap(identityURN, "Identity", []string{"identity"})
 
 	return capdag.NewCapManifest(
 		"__CARTRIDGE_NAME__",

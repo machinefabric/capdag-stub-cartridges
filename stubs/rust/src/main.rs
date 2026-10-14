@@ -17,7 +17,7 @@
 //!     # edit the labels or the peer cap, then re-run both to update
 
 use anyhow::Result;
-use capdag::standard::caps::identity_urn;
+use capdag::standard::caps::identity_cap;
 use capdag::{
     async_trait, ArgSource, Cap, CapArg, CapGroup, CapManifest, CapOutput, CapUrn, CapUrnBuilder,
     CartridgeChannel, CartridgeRuntime, DryContext, Op, OpError, OpMetadata, OpResult, Request,
@@ -151,8 +151,11 @@ fn build_manifest() -> CapManifest {
     );
     cap.cap_description =
         Some("Classify a piece of text as positive, neutral, or negative.".to_string());
+    // Every argument and every output has a name: the label a machine wires
+    // it by. The media URN is still what identifies it.
     cap.add_arg(CapArg::with_description(
         IN_MEDIA,
+        "text",
         true,
         vec![
             ArgSource::Stdin {
@@ -162,21 +165,14 @@ fn build_manifest() -> CapManifest {
         ],
         "UTF-8 text to classify.".to_string(),
     ));
-    cap.set_output(CapOutput {
-        media_urn: OUT_MEDIA.to_string(),
-        output_description:
-            "One of the literal strings 'positive', 'neutral', or 'negative'.".to_string(),
-        is_sequence: false,
-        streaming: false,
-        metadata: None,
-    });
+    cap.add_output(CapOutput::new(
+        OUT_MEDIA,
+        "tag",
+        "One of the literal strings 'positive', 'neutral', or 'negative'.",
+    ));
 
     // Every cartridge advertises CAP_IDENTITY; the runtime auto-registers its handler.
-    let identity = Cap::new(
-        identity_urn(),
-        "Identity".to_string(),
-        vec!["identity".to_string()],
-    );
+    let identity = identity_cap();
 
     CapManifest::new(
         "__CARTRIDGE_NAME__".to_string(),

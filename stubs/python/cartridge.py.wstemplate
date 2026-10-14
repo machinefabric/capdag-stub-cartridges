@@ -34,7 +34,7 @@ from capdag.cap.definition import (
     PositionSource,
     StdinSource,
 )
-from capdag.standard.caps import CAP_IDENTITY
+from capdag.standard.caps import identity_cap
 from capdag.urn.cap_urn import CapUrn, CapUrnBuilder
 from ops import DryContext, Op, OpMetadata, WetContext
 
@@ -138,21 +138,27 @@ CAP_URN: str = _cap_urn().to_string()
 def build_manifest() -> CapManifest:
     cap = Cap(_cap_urn(), "__CARTRIDGE_NAME__", ["__CARTRIDGE_NAME__"])
     cap.cap_description = "Classify a piece of text as positive, neutral, or negative."
+    # Every argument and every output has a name: the label a machine wires
+    # it by. The media URN is still what identifies it.
     cap.args = [
         CapArg(
             media_urn=IN_MEDIA,
+            name="text",
             required=True,
             sources=[StdinSource(IN_MEDIA), PositionSource(0)],
             arg_description="UTF-8 text to classify.",
         )
     ]
-    cap.output = CapOutput(
-        media_urn=OUT_MEDIA,
-        output_description="One of the literal strings 'positive', 'neutral', or 'negative'.",
+    cap.add_output(
+        CapOutput(
+            media_urn=OUT_MEDIA,
+            name="tag",
+            output_description="One of the literal strings 'positive', 'neutral', or 'negative'.",
+        )
     )
 
     # Every cartridge advertises CAP_IDENTITY; the runtime auto-registers its handler.
-    identity = Cap(CapUrn.from_string(CAP_IDENTITY), "Identity", ["identity"])
+    identity = identity_cap()
 
     return CapManifest(
         name="__CARTRIDGE_NAME__",
