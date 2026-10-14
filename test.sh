@@ -168,6 +168,20 @@ else bad "declared but absent: $(echo "$missing" | tr '\n' ' ')"; fi
 if [[ -z "$extra" ]]; then ok "every file on disk is declared"
 else bad "present but undeclared (an implementation would never write it): $(echo "$extra" | tr '\n' ' ')"; fi
 
+# The Rust stub's `.cargo/config.toml` pins the fabric manifest and the
+# cartridge registry regime the capdag it depends on is built against. Those
+# are the workspace's own pins; a stub that disagrees scaffolds a cartridge
+# that asks for a fabric or a registry its capdag does not speak.
+WORKSPACE_ROOT="$(cd "$ROOT/../.." && pwd)"
+for pin in "MFR_FABRIC_MANIFEST_VERSION fabric/manifest-version.txt" \
+           "MFR_CARTRIDGE_REGISTRY_VERSION schemas/cartridge-registry/registry-version.txt"; do
+    set -- $pin
+    want=$(tr -d '[:space:]' < "$WORKSPACE_ROOT/$2")
+    have=$(grep -E "^$1 = \"[0-9]+\"$" "$ROOT/stubs/rust/cargo-config.toml" | grep -oE '[0-9]+')
+    if [[ -n "$want" && "$have" == "$want" ]]; then ok "rust: $1 is the workspace's ($want)"
+    else bad "rust: $1 is '${have}' in stubs/rust/cargo-config.toml, and $2 says '${want}'"; fi
+done
+
 # ---------------------------------------------------------------------------
 # 2 + 3. Render, build, run, compare.
 # ---------------------------------------------------------------------------

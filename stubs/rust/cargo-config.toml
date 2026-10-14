@@ -7,5 +7,5 @@
 # They pin which fabric manifest and which cartridge registry regime this
 # cartridge is compiled against, and they must match the capdag version above.
 [env]
-MFR_FABRIC_MANIFEST_VERSION = "4"
-MFR_CARTRIDGE_REGISTRY_VERSION = "1"
+MFR_FABRIC_MANIFEST_VERSION = "8"
+MFR_CARTRIDGE_REGISTRY_VERSION = "2"
