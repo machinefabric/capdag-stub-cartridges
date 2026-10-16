@@ -153,7 +153,7 @@ func buildManifest() -> Manifest {
 
     return Manifest(
         name: "__CARTRIDGE_NAME__",
-        version: "1.211.2212",
+        version: "1.212.2223",
         channel: "nightly",   // 'nightly' or 'release'; nightly for dev.
         registryURL: nil,     // nil => dev cartridge (installed locally).
         description: "Classify a piece of text as positive, neutral, or negative.",

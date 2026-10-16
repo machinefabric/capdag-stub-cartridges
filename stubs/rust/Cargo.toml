@@ -1,6 +1,6 @@
 [package]
 name = "__CARTRIDGE_NAME__"
-version = "1.211.2212"
+version = "1.212.2223"
 edition = "2021"
 
 [dependencies]
