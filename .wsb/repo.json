@@ -1,0 +1,10 @@
+{
+  "name": "capdag-stub-cartridges",
+  "alias": "capdag_stub_cartridges",
+  "templates_root": "../..",
+  "version": {
+    "major": 1,
+    "file": "version.txt",
+    "detect_manifests": true
+  }
+}
