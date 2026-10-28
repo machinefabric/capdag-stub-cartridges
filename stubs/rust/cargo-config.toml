@@ -8,4 +8,4 @@
 # cartridge is compiled against, and they must match the capdag version above.
 [env]
 MFR_FABRIC_MANIFEST_VERSION = "11"
-MFR_CARTRIDGE_REGISTRY_VERSION = "3"
+MFR_CARTRIDGE_REGISTRY_VERSION = "4"
