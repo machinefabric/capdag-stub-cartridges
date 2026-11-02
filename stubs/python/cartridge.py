@@ -48,14 +48,14 @@ from ops import DryContext, Op, OpMetadata, WetContext
 # always one of them: a hallucinated label is impossible by construction, and
 # this cartridge does not have to defend against one.
 CLASSIFY_CAP = (
-    'cap:classify;constrained;in="media:enc=utf-8";language=en;'
-    'out="media:fmt=json;record;semantic-judgment"'
+    'cap:classify;constrained;in="media:enc=utf8;plain-text";language=en;'
+    'out="media:enc=utf8;fmt=json;record;semantic-judgment"'
 )
 
 # The item being classified, and the allowed labels — both addressed by MEDIA
 # URN, which is how a peer call names its arguments.
-CLASSIFY_ITEM_MEDIA = "media:enc=utf-8"
-CLASSIFY_LABELS_MEDIA = "media:enc=utf-8;label-set"
+CLASSIFY_ITEM_MEDIA = "media:enc=utf8;plain-text"
+CLASSIFY_LABELS_MEDIA = "media:enc=utf8;label-set"
 
 LABELS = "positive,neutral,negative"
 
@@ -116,8 +116,8 @@ class TagOp(Op):
 # --- URN + manifest. Media/cap URNs are seeded from the project name so they -
 #     are unique per project and never collide with the published fabric. -----
 
-IN_MEDIA = "media:enc=utf-8;__CARTRIDGE_NAME__-input"
-OUT_MEDIA = "media:enc=utf-8;__CARTRIDGE_NAME__-tag"
+IN_MEDIA = "media:enc=utf8;__CARTRIDGE_NAME__-input"
+OUT_MEDIA = "media:enc=utf8;__CARTRIDGE_NAME__-tag"
 
 
 def _cap_urn() -> CapUrn:

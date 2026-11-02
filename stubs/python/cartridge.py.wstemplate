@@ -48,13 +48,13 @@ from ops import DryContext, Op, OpMetadata, WetContext
 # always one of them: a hallucinated label is impossible by construction, and
 # this cartridge does not have to defend against one.
 CLASSIFY_CAP = (
-    'cap:classify;constrained;in="media:enc=utf8";language=en;'
+    'cap:classify;constrained;in="media:enc=utf8;plain-text";language=en;'
     'out="media:enc=utf8;fmt=json;record;semantic-judgment"'
 )
 
 # The item being classified, and the allowed labels — both addressed by MEDIA
 # URN, which is how a peer call names its arguments.
-CLASSIFY_ITEM_MEDIA = "media:enc=utf8"
+CLASSIFY_ITEM_MEDIA = "media:enc=utf8;plain-text"
 CLASSIFY_LABELS_MEDIA = "media:enc=utf8;label-set"
 
 LABELS = "positive,neutral,negative"

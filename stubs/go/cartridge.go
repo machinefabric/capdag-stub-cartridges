@@ -37,13 +37,13 @@ import (
 // The labels are token-level constrained to the set we pass, so the answer is
 // always one of them: a hallucinated label is impossible by construction, and
 // this cartridge does not have to defend against one.
-const classifyCap = `cap:classify;constrained;in="media:enc=utf-8";language=en;out="media:fmt=json;record;semantic-judgment"`
+const classifyCap = `cap:classify;constrained;in="media:enc=utf8;plain-text";language=en;out="media:enc=utf8;fmt=json;record;semantic-judgment"`
 
 // The item being classified, and the allowed labels — both addressed by MEDIA
 // URN, which is how a peer call names its arguments.
 const (
-	classifyItemMedia   = "media:enc=utf-8"
-	classifyLabelsMedia = "media:enc=utf-8;label-set"
+	classifyItemMedia   = "media:enc=utf8;plain-text"
+	classifyLabelsMedia = "media:enc=utf8;label-set"
 	labels              = "positive,neutral,negative"
 )
 
@@ -127,8 +127,8 @@ func collectText(frames <-chan bifaci.Frame) (string, error) {
 //     are unique per project and never collide with the published fabric. -----
 
 const (
-	inMedia  = "media:enc=utf-8;__CARTRIDGE_NAME__-input"
-	outMedia = "media:enc=utf-8;__CARTRIDGE_NAME__-tag"
+	inMedia  = "media:enc=utf8;__CARTRIDGE_NAME__-input"
+	outMedia = "media:enc=utf8;__CARTRIDGE_NAME__-tag"
 )
 
 // capURN builds the cap URN ONCE via the builder, so the string we register

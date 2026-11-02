@@ -35,11 +35,11 @@ use std::sync::Arc;
 /// always one of them: a hallucinated label is impossible by construction, and
 /// this cartridge does not have to defend against one.
 const CLASSIFY_CAP: &str =
-    r#"cap:classify;constrained;in="media:enc=utf8";language=en;out="media:enc=utf8;fmt=json;record;semantic-judgment""#;
+    r#"cap:classify;constrained;in="media:enc=utf8;plain-text";language=en;out="media:enc=utf8;fmt=json;record;semantic-judgment""#;
 
 /// The item being classified, and the allowed labels — both addressed by MEDIA
 /// URN, which is how a peer call names its arguments.
-const CLASSIFY_ITEM_MEDIA: &str = "media:enc=utf8";
+const CLASSIFY_ITEM_MEDIA: &str = "media:enc=utf8;plain-text";
 const CLASSIFY_LABELS_MEDIA: &str = "media:enc=utf8;label-set";
 
 const LABELS: &str = "positive,neutral,negative";
