@@ -46,7 +46,7 @@ Three details are worth reading in whichever language you know best, because
 they are the parts people get wrong:
 
 - **Peer arguments are addressed by MEDIA URN**, not by position — the item goes
-  to `media:enc=utf-8`, the allowed labels to `media:enc=utf-8;label-set`.
+  to `media:enc=utf8`, the allowed labels to `media:enc=utf8;label-set`.
 - **The response is collected through a FORWARDING collector.** Inference is
   slow and the model reports progress; a plain collector *rejects* those LOG
   frames rather than discarding them, because dropping a callee's diagnostics

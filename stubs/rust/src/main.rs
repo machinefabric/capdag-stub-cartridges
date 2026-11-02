@@ -35,12 +35,12 @@ use std::sync::Arc;
 /// always one of them: a hallucinated label is impossible by construction, and
 /// this cartridge does not have to defend against one.
 const CLASSIFY_CAP: &str =
-    r#"cap:classify;constrained;in="media:enc=utf-8";language=en;out="media:fmt=json;record;semantic-judgment""#;
+    r#"cap:classify;constrained;in="media:enc=utf8";language=en;out="media:enc=utf8;fmt=json;record;semantic-judgment""#;
 
 /// The item being classified, and the allowed labels — both addressed by MEDIA
 /// URN, which is how a peer call names its arguments.
-const CLASSIFY_ITEM_MEDIA: &str = "media:enc=utf-8";
-const CLASSIFY_LABELS_MEDIA: &str = "media:enc=utf-8;label-set";
+const CLASSIFY_ITEM_MEDIA: &str = "media:enc=utf8";
+const CLASSIFY_LABELS_MEDIA: &str = "media:enc=utf8;label-set";
 
 const LABELS: &str = "positive,neutral,negative";
 
@@ -129,8 +129,8 @@ impl Op<()> for TagOp {
 // --- URN + manifest. Media/cap URNs are seeded from the project name so they -
 //     are unique per project and never collide with the published fabric. -----
 
-const IN_MEDIA: &str = "media:enc=utf-8;__CARTRIDGE_NAME__-input";
-const OUT_MEDIA: &str = "media:enc=utf-8;__CARTRIDGE_NAME__-tag";
+const IN_MEDIA: &str = "media:enc=utf8;__CARTRIDGE_NAME__-input";
+const OUT_MEDIA: &str = "media:enc=utf8;__CARTRIDGE_NAME__-tag";
 
 /// Build the cap URN ONCE via the builder, so the string we register with
 /// matches the runtime's canonical (alphabetically-sorted) byte form.
