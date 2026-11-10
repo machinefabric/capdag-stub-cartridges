@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""__CARTRIDGE_NAME__ — a CapDAG cartridge (Python), scaffolded by `capdag new`.
+"""__CARTRIDGE_NAME__ — a CapDAG cartridge (Python), scaffolded by `capdag dev new`.
 
 Reads UTF-8 text on stdin and emits a single tag word: `positive`,
 `neutral`, or `negative`.
@@ -12,9 +12,9 @@ cartridge rather than a toy: one custom cap, one Op that calls a peer, one
 manifest, one main().
 
 Develop it with:
-    capdag dev-install .          # install/update under the local `dev` slug
-    echo "I love this" | capdag __CARTRIDGE_NAME__
-    # edit the labels or the peer cap, then re-run `capdag dev-install .`
+    capdag dev install            # install/update under the local `dev` slug
+    echo "I love this" | capdag run __CARTRIDGE_NAME__
+    # edit the labels or the peer cap, then re-run `capdag dev install`
 """
 
 import json

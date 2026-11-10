@@ -8,7 +8,7 @@
 #      the contract. A stub an implementation cannot find is a scaffold that
 #      silently produces an incomplete project.
 #   2. Every stub BUILDS and RUNS. `manifest` is the subcommand the host itself
-#      calls (capdag dev-install reads it), so a stub that cannot answer it is
+#      calls (capdag dev install reads it), so a stub that cannot answer it is
 #      not installable.
 #   3. Every stub's manifest is BYTE-IDENTICAL to the others'. This is the
 #      parity contract: the languages implement one cap, and a difference here
