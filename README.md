@@ -1,9 +1,9 @@
 # capdag-stub-cartridges
 
-The canonical cartridge stubs `capdag new` scaffolds, in every language capdag
+The canonical cartridge stubs `capdag dev new` scaffolds, in every language capdag
 supports — one source of truth that all five capdag implementations reproduce.
 
-`capdag new <name> --<language>` must write the same project whichever capdag
+`capdag dev new <path> --lang <language>` must write the same project whichever capdag
 binary you run it from. A stub kept privately inside each implementation would
 drift the moment one of them was edited, and the drift would be invisible: five
 CLIs each producing a slightly different "canonical" starting point. So the
@@ -12,11 +12,11 @@ stubs live here, and every implementation renders *these* files.
 ## The contract
 
 `stubs.json` is the machine-readable form, and it is what an implementation
-reads. Per language it declares:
+reads. Each language is keyed by its id, the value `capdag dev new --lang`
+takes. Per language it declares:
 
 | field | meaning |
 |---|---|
-| `flag` | the `capdag new` flag that selects this language |
 | `entry` | the executable the host launches (rendered, so a compiled entry can be named after the project) |
 | `build` | commands that turn the sources into `entry` — empty for interpreted languages |
 | `runtime` | the cartridge runtime package the stub imports, and how to install it |
@@ -62,7 +62,7 @@ nothing about the protocol. Media and cap URNs are seeded from the project name
 so a scaffolded cap can never collide with a published one.
 
 Because the judgment is delegated, a stub **needs the capdag host**: run it as
-`capdag <name>`, not by executing the built entry directly. Run directly it
+`capdag run <name>`, not by executing the built entry directly. Run directly it
 reaches its handler and then fails there, honestly, on the unroutable peer
 call.
 
