@@ -1,4 +1,4 @@
-// __CARTRIDGE_NAME__ — a CapDAG cartridge (Go), scaffolded by `capdag new`.
+// __CARTRIDGE_NAME__ — a CapDAG cartridge (Go), scaffolded by `capdag dev new`.
 //
 // Reads UTF-8 text on stdin and emits a single tag word: `positive`,
 // `neutral`, or `negative`.
@@ -13,8 +13,8 @@
 // Develop it with:
 //
 //	go build -buildvcs=false -o __CARTRIDGE_NAME__ .   # the entry the host launches
-//	capdag dev-install .               # install/update under the local `dev` slug
-//	echo "I love this" | capdag __CARTRIDGE_NAME__
+//	capdag dev install                 # install/update under the local `dev` slug
+//	echo "I love this" | capdag run __CARTRIDGE_NAME__
 //	# edit the labels or the peer cap, then rebuild + re-install to update
 package main
 
@@ -173,7 +173,7 @@ func buildManifest() *bifaci.CapManifest {
 
 	return capdag.NewCapManifest(
 		"__CARTRIDGE_NAME__",
-		"1.232.2455",
+		"1.233.2468",
 		"nightly", // 'nightly' or 'release'; nightly for dev.
 		nil,       // nil => dev cartridge (installed locally).
 		"Classify a piece of text as positive, neutral, or negative.",

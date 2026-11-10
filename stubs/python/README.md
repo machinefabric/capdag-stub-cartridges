@@ -1,6 +1,6 @@
 # __CARTRIDGE_NAME__
 
-A CapDAG cartridge scaffolded by `capdag new`. It reads UTF-8 text on
+A CapDAG cartridge scaffolded by `capdag dev new`. It reads UTF-8 text on
 stdin and emits `positive`, `neutral`, or `negative`.
 
 ## Develop
@@ -10,14 +10,14 @@ stdin and emits `positive`, `neutral`, or `negative`.
 pip install capdag
 
 # 2. Install this cartridge under the local `dev` slug:
-capdag dev-install .
+capdag dev install
 
 # 3. Run your cap through the capdag host:
-echo "I love this" | capdag __CARTRIDGE_NAME__
+echo "I love this" | capdag run __CARTRIDGE_NAME__
 # => positive
 
 # 4. Edit the labels or the peer cap in cartridge.py, then re-run step 2:
-capdag dev-install .
+capdag dev install
 ```
 
 ## It needs the host
@@ -26,7 +26,7 @@ This cartridge does not classify anything itself — it PEER-CALLS `classify-en`
 and a model cartridge answers. Peer calls are routed by the capdag host, so
 running the built entry directly (`./__CARTRIDGE_NAME__ __CARTRIDGE_NAME__`)
 fails with `Peer invocation not supported in this context`. That is correct, not
-a bug: run it through `capdag __CARTRIDGE_NAME__`, which hosts the cartridge and
+a bug: run it through `capdag run __CARTRIDGE_NAME__`, which hosts the cartridge and
 routes the call.
 
 A model cartridge providing `classify-en` must be installed. The first run

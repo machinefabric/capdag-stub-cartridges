@@ -1,4 +1,4 @@
-// __CARTRIDGE_NAME__ — a CapDAG cartridge (Swift), scaffolded by `capdag new`.
+// __CARTRIDGE_NAME__ — a CapDAG cartridge (Swift), scaffolded by `capdag dev new`.
 //
 // Reads UTF-8 text on stdin and emits a single tag word: `positive`,
 // `neutral`, or `negative`.
@@ -12,8 +12,8 @@
 //
 // Develop it with:
 //     swift build -c release                    # the entry the host launches
-//     capdag dev-install .                      # install under the local `dev` slug
-//     echo "I love this" | capdag __CARTRIDGE_NAME__
+//     capdag dev install                        # install under the local `dev` slug
+//     echo "I love this" | capdag run __CARTRIDGE_NAME__
 //     # edit the labels or the peer cap, then re-run both to update
 
 import Foundation
@@ -153,7 +153,7 @@ func buildManifest() -> Manifest {
 
     return Manifest(
         name: "__CARTRIDGE_NAME__",
-        version: "1.232.2455",
+        version: "1.233.2468",
         channel: "nightly",   // 'nightly' or 'release'; nightly for dev.
         registryURL: nil,     // nil => dev cartridge (installed locally).
         description: "Classify a piece of text as positive, neutral, or negative.",
