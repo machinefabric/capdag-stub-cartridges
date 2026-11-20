@@ -26,6 +26,7 @@ import (
 	capdag "github.com/machinefabric/capdag-go"
 	"github.com/machinefabric/capdag-go/bifaci"
 	"github.com/machinefabric/capdag-go/cap"
+	"github.com/machinefabric/capdag-go/media"
 	"github.com/machinefabric/capdag-go/urn"
 )
 
@@ -133,9 +134,13 @@ const (
 
 // capURN builds the cap URN ONCE via the builder, so the string we register
 // with matches the runtime's canonical (alphabetically-sorted) byte form.
+//
+// `language=en`: the cap judges English text only, because the `classify-en`
+// cap it delegates to does.
 func capURN() *urn.CapUrn {
 	built, err := urn.NewCapUrnBuilder().
 		Marker("__CARTRIDGE_NAME__").
+		Tag("language", "en").
 		InSpec(inMedia).
 		OutSpec(outMedia).
 		Build()
@@ -148,6 +153,10 @@ func capURN() *urn.CapUrn {
 func buildManifest() *bifaci.CapManifest {
 	c := cap.NewCap(capURN(), "__CARTRIDGE_NAME__", []string{"__CARTRIDGE_NAME__"})
 	c.CapDescription = cap.StringPtr("Classify a piece of text as positive, neutral, or negative.")
+	// The fabric dim the `language=en` tag comes from, and the value chosen
+	// from it. Dims are descriptive (dispatch never reads them), and the
+	// manifest carries them as the fabric publishes a cap's.
+	c.Dims = []media.DimRef{{Dim: "language", Value: "en"}}
 	stdin := inMedia
 	position := 0
 	// Every argument and every output has a name: the label a machine wires
@@ -173,7 +182,7 @@ func buildManifest() *bifaci.CapManifest {
 
 	return capdag.NewCapManifest(
 		"__CARTRIDGE_NAME__",
-		"1.234.2480",
+		"1.236.2514",
 		"nightly", // 'nightly' or 'release'; nightly for dev.
 		nil,       // nil => dev cartridge (installed locally).
 		"Classify a piece of text as positive, neutral, or negative.",

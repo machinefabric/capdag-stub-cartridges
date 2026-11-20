@@ -106,6 +106,9 @@ let outMedia = "media:enc=utf8;__CARTRIDGE_NAME__-tag"
 
 /// Build the cap URN ONCE via the builder, so the string we register with
 /// matches the runtime's canonical (alphabetically-sorted) byte form.
+///
+/// `language=en`: the cap judges English text only, because the `classify-en`
+/// cap it delegates to does.
 func capURN() -> String {
     do {
         // Two Objective-C bridging details: `+builder` imports as `init()`, and
@@ -113,6 +116,7 @@ func capURN() -> String {
         // than an inout argument.
         let urn = try CSCapUrnBuilder()
             .marker("__CARTRIDGE_NAME__")
+            .tag("language", value: "en")
             .inSpec(inMedia)
             .outSpec(outMedia)
             .build()
@@ -145,7 +149,11 @@ func buildManifest() -> Manifest {
                 name: "tag",
                 outputDescription: "One of the literal strings 'positive', 'neutral', or 'negative'."
             )
-        ]
+        ],
+        // The fabric dim the `language=en` tag comes from, and the value chosen
+        // from it. Dims are descriptive (dispatch never reads them), and the
+        // manifest carries them as the fabric publishes a cap's.
+        dims: [DimRef(dim: "language", value: "en")]
     )
 
     // Every cartridge advertises CAP_IDENTITY; the runtime auto-registers its handler.
@@ -153,7 +161,7 @@ func buildManifest() -> Manifest {
 
     return Manifest(
         name: "__CARTRIDGE_NAME__",
-        version: "1.234.2480",
+        version: "1.236.2514",
         channel: "nightly",   // 'nightly' or 'release'; nightly for dev.
         registryURL: nil,     // nil => dev cartridge (installed locally).
         description: "Classify a piece of text as positive, neutral, or negative.",

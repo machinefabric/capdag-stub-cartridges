@@ -27,6 +27,7 @@ from capdag.bifaci.cartridge_runtime import (
 )
 from capdag.cap.caller import CapArgumentValue
 from capdag.bifaci.manifest import CapManifest, default_group
+from capdag.fabric.dim import DimRef
 from capdag.cap.definition import (
     Cap,
     CapArg,
@@ -122,10 +123,14 @@ OUT_MEDIA = "media:enc=utf8;__CARTRIDGE_NAME__-tag"
 
 def _cap_urn() -> CapUrn:
     """Build the cap URN ONCE via the builder, so the string we register with
-    matches the runtime's canonical (alphabetically-sorted) byte form."""
+    matches the runtime's canonical (alphabetically-sorted) byte form.
+
+    `language=en`: the cap judges English text only, because the `classify-en`
+    cap it delegates to does."""
     return (
         CapUrnBuilder()
         .marker("__CARTRIDGE_NAME__")
+        .tag("language", "en")
         .in_spec(IN_MEDIA)
         .out_spec(OUT_MEDIA)
         .build()
@@ -138,6 +143,10 @@ CAP_URN: str = _cap_urn().to_string()
 def build_manifest() -> CapManifest:
     cap = Cap(_cap_urn(), "__CARTRIDGE_NAME__", ["__CARTRIDGE_NAME__"])
     cap.cap_description = "Classify a piece of text as positive, neutral, or negative."
+    # The fabric dim the `language=en` tag comes from, and the value chosen
+    # from it. Dims are descriptive (dispatch never reads them), and the
+    # manifest carries them as the fabric publishes a cap's.
+    cap.dims = [DimRef("language", "en")]
     # Every argument and every output has a name: the label a machine wires
     # it by. The media URN is still what identifies it.
     cap.args = [
@@ -162,7 +171,7 @@ def build_manifest() -> CapManifest:
 
     return CapManifest(
         name="__CARTRIDGE_NAME__",
-        version="1.234.2480",
+        version="1.236.2514",
         channel="nightly",          # 'nightly' or 'release'; nightly for dev.
         registry_url=None,           # None => dev cartridge (installed locally).
         description="Classify a piece of text as positive, neutral, or negative.",

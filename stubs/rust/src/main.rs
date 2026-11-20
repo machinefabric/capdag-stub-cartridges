@@ -20,7 +20,7 @@ use anyhow::Result;
 use capdag::standard::caps::identity_cap;
 use capdag::{
     async_trait, ArgSource, Cap, CapArg, CapGroup, CapManifest, CapOutput, CapUrn, CapUrnBuilder,
-    CartridgeChannel, CartridgeRuntime, DryContext, Op, OpError, OpMetadata, OpResult, Request,
+    CartridgeChannel, CartridgeRuntime, DimRef, DryContext, Op, OpError, OpMetadata, OpResult, Request,
     WetContext, WET_KEY_REQUEST,
 };
 use serde_json::Value as JsonValue;
@@ -134,9 +134,13 @@ const OUT_MEDIA: &str = "media:enc=utf8;__CARTRIDGE_NAME__-tag";
 
 /// Build the cap URN ONCE via the builder, so the string we register with
 /// matches the runtime's canonical (alphabetically-sorted) byte form.
+///
+/// `language=en`: the cap judges English text only, because the `classify-en`
+/// cap it delegates to does.
 fn cap_urn() -> CapUrn {
     CapUrnBuilder::new()
         .marker("__CARTRIDGE_NAME__")
+        .tag("language", "en")
         .in_spec(IN_MEDIA)
         .out_spec(OUT_MEDIA)
         .build()
@@ -151,6 +155,10 @@ fn build_manifest() -> CapManifest {
     );
     cap.cap_description =
         Some("Classify a piece of text as positive, neutral, or negative.".to_string());
+    // The fabric dim the `language=en` tag comes from, and the value chosen
+    // from it. Dims are descriptive (dispatch never reads them), and the
+    // manifest carries them as the fabric publishes a cap's.
+    cap.dims = vec![DimRef::new("language", "en")];
     // Every argument and every output has a name: the label a machine wires
     // it by. The media URN is still what identifies it.
     cap.add_arg(CapArg::with_description(
