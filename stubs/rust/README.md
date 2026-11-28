@@ -14,7 +14,7 @@ cargo build --release --target-dir target
 capdag dev install
 
 # 3. Run your cap through the capdag host:
-echo "I love this" | capdag run __CARTRIDGE_NAME__
+echo "I love this" | capdag run '[in -> __CARTRIDGE_NAME__ -> out]' -
 # => positive
 
 # 4. Edit the labels or the peer cap in src/main.rs, then re-run steps 1-2:
@@ -42,7 +42,7 @@ This cartridge does not classify anything itself — it PEER-CALLS `classify-en`
 and a model cartridge answers. Peer calls are routed by the capdag host, so
 running the built entry directly (`./__CARTRIDGE_NAME__ __CARTRIDGE_NAME__`)
 fails with `Peer invocation not supported in this context`. That is correct, not
-a bug: run it through `capdag run __CARTRIDGE_NAME__`, which hosts the cartridge and
+a bug: run it through `capdag run '[in -> __CARTRIDGE_NAME__ -> out]' -`, which hosts the cartridge and
 routes the call.
 
 A model cartridge providing `classify-en` must be installed. The first run

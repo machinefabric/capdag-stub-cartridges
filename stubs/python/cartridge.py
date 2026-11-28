@@ -13,7 +13,7 @@ manifest, one main().
 
 Develop it with:
     capdag dev install            # install/update under the local `dev` slug
-    echo "I love this" | capdag run __CARTRIDGE_NAME__
+    echo "I love this" | capdag run '[in -> __CARTRIDGE_NAME__ -> out]' -
     # edit the labels or the peer cap, then re-run `capdag dev install`
 """
 
@@ -171,7 +171,7 @@ def build_manifest() -> CapManifest:
 
     return CapManifest(
         name="__CARTRIDGE_NAME__",
-        version="1.243.2604",
+        version="1.244.2617",
         channel="nightly",          # 'nightly' or 'release'; nightly for dev.
         registry_url=None,           # None => dev cartridge (installed locally).
         description="Classify a piece of text as positive, neutral, or negative.",

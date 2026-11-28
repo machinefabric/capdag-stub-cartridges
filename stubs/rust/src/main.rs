@@ -13,7 +13,7 @@
 //! Develop it with:
 //!     cargo build --release --target-dir target # the entry the host launches
 //!     capdag dev install                        # install under the local `dev` slug
-//!     echo "I love this" | capdag run __CARTRIDGE_NAME__
+//!     echo "I love this" | capdag run '[in -> __CARTRIDGE_NAME__ -> out]' -
 //!     # edit the labels or the peer cap, then re-run both to update
 
 use anyhow::Result;

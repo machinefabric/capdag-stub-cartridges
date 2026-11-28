@@ -13,7 +13,7 @@
 // Develop it with:
 //     swift build -c release                    # the entry the host launches
 //     capdag dev install                        # install under the local `dev` slug
-//     echo "I love this" | capdag run __CARTRIDGE_NAME__
+//     echo "I love this" | capdag run '[in -> __CARTRIDGE_NAME__ -> out]' -
 //     # edit the labels or the peer cap, then re-run both to update
 
 import Foundation
@@ -161,7 +161,7 @@ func buildManifest() -> Manifest {
 
     return Manifest(
         name: "__CARTRIDGE_NAME__",
-        version: "1.243.2604",
+        version: "1.244.2617",
         channel: "nightly",   // 'nightly' or 'release'; nightly for dev.
         registryURL: nil,     // nil => dev cartridge (installed locally).
         description: "Classify a piece of text as positive, neutral, or negative.",

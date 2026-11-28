@@ -14,7 +14,7 @@
 //
 //	go build -buildvcs=false -o __CARTRIDGE_NAME__ .   # the entry the host launches
 //	capdag dev install                 # install/update under the local `dev` slug
-//	echo "I love this" | capdag run __CARTRIDGE_NAME__
+//	echo "I love this" | capdag run '[in -> __CARTRIDGE_NAME__ -> out]' -
 //	# edit the labels or the peer cap, then rebuild + re-install to update
 package main
 
@@ -182,7 +182,7 @@ func buildManifest() *bifaci.CapManifest {
 
 	return capdag.NewCapManifest(
 		"__CARTRIDGE_NAME__",
-		"1.243.2604",
+		"1.244.2617",
 		"nightly", // 'nightly' or 'release'; nightly for dev.
 		nil,       // nil => dev cartridge (installed locally).
 		"Classify a piece of text as positive, neutral, or negative.",

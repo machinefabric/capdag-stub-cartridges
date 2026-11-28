@@ -13,7 +13,7 @@ manifest, one main().
 
 Develop it with:
     capdag dev install            # install/update under the local `dev` slug
-    echo "I love this" | capdag run __CARTRIDGE_NAME__
+    echo "I love this" | capdag run '[in -> __CARTRIDGE_NAME__ -> out]' -
     # edit the labels or the peer cap, then re-run `capdag dev install`
 """
 
